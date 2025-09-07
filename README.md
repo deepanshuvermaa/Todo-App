@@ -2,6 +2,19 @@
 
 A minimalist task management application with Google Sheets integration for data persistence and automatic task rollover functionality.
 
+## 🚨 IMPORTANT: API Key Required
+
+**The app needs YOUR Google API key to work with Google Sheets!**
+
+### Quick Setup (2 minutes):
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Click "Show Key" next to your API key
+3. Copy the key (looks like: `AIzaSy...`)
+4. Edit `config.js` and replace `YOUR_API_KEY_HERE` with your actual key
+5. Save and deploy
+
+Without the API key, the app works in local mode only (no cloud sync).
+
 ## Features
 
 - **Task Management**: Add, complete, and delete daily tasks

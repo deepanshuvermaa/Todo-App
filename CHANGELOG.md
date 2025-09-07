@@ -217,3 +217,75 @@ Version 1.1.1 fixes critical issues preventing the app from working without Goog
 2. **Cloud Mode**: Google Sheets integration when properly configured
 
 Users can start using the app immediately in local mode and add Google integration later.
+
+## [1.2.0] - 2025-09-07
+
+### Added
+
+#### Dark Mode Feature
+- Added dark mode toggle button in header with sun/moon icons
+- Implemented smooth transitions between light and dark themes
+- Added localStorage persistence for theme preference
+- Proper contrast ratios for all elements in dark mode
+
+#### Setup Validation
+- Created `setup-checker.js` for configuration validation
+- Added helpful error messages for missing API keys
+- Shows setup instructions directly in the app
+- Validates API key format and client ID format
+
+#### Modern Google Authentication
+- Implemented `google-auth.js` using Google Identity Services (GIS)
+- Replaced deprecated gapi.auth2 with modern OAuth2 flow
+- Added proper token management and refresh
+- Better error handling for authentication failures
+
+#### Network Handling
+- Added online/offline detection
+- Shows appropriate messages when connection is lost
+- Auto-syncs when connection is restored
+- Works fully offline with localStorage fallback
+
+### Fixed
+
+#### Critical Issues
+- Fixed "YOUR_API_KEY" validation to prevent API calls with placeholder
+- Fixed OAuth2 migration issues with Google's new requirements
+- Fixed Content Security Policy warnings
+- Fixed discovery document loading failures
+
+#### Error Handling
+- Added comprehensive error boundaries
+- Improved error messages with actionable solutions
+- Added setup validation before attempting authentication
+- Added network failure recovery
+
+#### UI/UX Improvements
+- Added warning message style for network issues
+- Fixed dark mode contrast for error messages
+- Added setup error container with instructions
+- Improved message notification visibility
+
+### Changed
+
+#### Authentication Flow
+- Migrated from deprecated auth2 to Google Identity Services
+- Updated initialization sequence for better reliability
+- Added retry mechanism for API loading
+- Improved credential validation
+
+### Security
+
+- Added API key format validation
+- Added domain validation for OAuth
+- Improved error messages to not expose sensitive info
+- Added proper token revocation on sign out
+
+### Summary
+
+Version 1.2.0 addresses all critical authentication issues and adds dark mode support. The app now:
+- Works reliably with proper Google API configuration
+- Provides clear setup instructions when misconfigured
+- Handles network failures gracefully
+- Offers a complete dark mode experience
+- Uses modern Google authentication standards

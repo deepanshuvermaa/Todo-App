@@ -443,6 +443,12 @@ body.dark-mode .dark-mode-toggle .moon-icon {
     border: 1px solid #bee5eb;
 }
 
+.message.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
 .message a {
     color: inherit;
     text-decoration: underline;
@@ -669,6 +675,37 @@ body.dark-mode .message.info {
     background-color: #1E3A8A;
     color: #60A5FA;
     border-color: #1E40AF;
+}
+
+body.dark-mode .message.warning {
+    background-color: #78350F;
+    color: #FCD34D;
+    border-color: #92400E;
+}
+
+/* Setup error styling */
+.setup-error-container {
+    background: #FEE2E2;
+    border: 2px solid #DC2626;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    color: #991B1B;
+}
+
+body.dark-mode .setup-error-container {
+    background: #7F1D1D;
+    border-color: #991B1B;
+    color: #FCA5A5;
+}
+
+body.dark-mode .setup-error-container a {
+    color: #60A5FA;
+}
+
+body.dark-mode .setup-error-container button {
+    background: #991B1B;
+    color: white;
 }
 
 .sheet-config {

@@ -17,15 +17,43 @@ class TodoApp {
         this.renderTasks(); // Add this to show tasks immediately
         this.updateMetrics();
         
-        // Initialize Google API only if config is set
-        if (typeof CONFIG !== 'undefined' && CONFIG.GOOGLE_CLIENT_ID !== 'YOUR_CLIENT_ID.apps.googleusercontent.com') {
+        // Check network status
+        this.setupNetworkHandlers();
+        
+        // Initialize Google API only if config is set and valid
+        if (typeof CONFIG !== 'undefined' && 
+            CONFIG.GOOGLE_CLIENT_ID && 
+            !CONFIG.GOOGLE_CLIENT_ID.includes('YOUR') &&
+            CONFIG.GOOGLE_API_KEY &&
+            !CONFIG.GOOGLE_API_KEY.includes('YOUR')) {
             await this.initGoogleAPI();
         } else {
             console.log('Google API not configured. Running in local mode.');
-            this.showMessage('Running in local mode. Configure Google API for cloud sync.', 'info');
+            if (CONFIG && CONFIG.GOOGLE_API_KEY && CONFIG.GOOGLE_API_KEY.includes('YOUR')) {
+                this.showMessage('Running in local mode. Add your Google API key to enable cloud sync.', 'info');
+            }
         }
         
         this.startAutoRollover();
+    }
+
+    setupNetworkHandlers() {
+        // Handle online/offline events
+        window.addEventListener('online', () => {
+            this.showMessage('Connection restored', 'success');
+            if (this.isAuthenticated && this.sheetId) {
+                this.syncToSheets();
+            }
+        });
+
+        window.addEventListener('offline', () => {
+            this.showMessage('No internet connection. Working offline.', 'warning');
+        });
+
+        // Check initial network status
+        if (!navigator.onLine) {
+            this.showMessage('No internet connection. Your tasks will sync when you\'re back online.', 'info');
+        }
     }
 
     initDarkMode() {
@@ -290,38 +318,42 @@ class TodoApp {
 
     // Google Sheets Integration
     async initGoogleAPI() {
-        // Wait for gapi to load
+        // Wait for both gapi and google (GIS) to load
         let retries = 0;
-        while (typeof gapi === 'undefined' && retries < 10) {
+        while ((typeof gapi === 'undefined' || typeof google === 'undefined') && retries < 10) {
             await new Promise(resolve => setTimeout(resolve, 500));
             retries++;
         }
         
-        if (typeof gapi !== 'undefined') {
-            if (!window.googleAuth) {
-                window.googleAuth = new GoogleAuthManager();
-            }
-            
+        if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
             try {
-                await window.googleAuth.initialize();
+                // Use the modern authentication
+                await window.modernGoogleAuth.initialize();
                 this.gapiLoaded = true;
                 console.log('Google API initialized successfully');
             } catch (error) {
                 console.error('Failed to initialize Google API:', error);
-                // Don't show error for local mode, it's expected
-                if (CONFIG.GOOGLE_CLIENT_ID !== 'YOUR_API_KEY') {
+                // Check if API key is configured
+                if (CONFIG.GOOGLE_API_KEY === 'YOUR_API_KEY') {
+                    this.showMessage('Please add your Google API key to config.js', 'error');
+                } else {
                     this.showMessage('Google API is loading. Please wait a moment and try again.', 'info');
                 }
             }
         } else {
-            console.log('Google API library not available');
+            console.log('Google libraries not available yet');
         }
     }
 
     async handleGoogleSignIn() {
         // Check if Google API is configured
         if (typeof CONFIG === 'undefined' || CONFIG.GOOGLE_CLIENT_ID === 'YOUR_CLIENT_ID.apps.googleusercontent.com') {
-            this.showMessage('Please configure Google API credentials in config.js first.', 'error');
+            this.showMessage('Please configure Google Client ID in config.js', 'error');
+            return;
+        }
+        
+        if (CONFIG.GOOGLE_API_KEY === 'YOUR_API_KEY') {
+            this.showMessage('Please add your Google API Key to config.js', 'error');
             return;
         }
         
@@ -337,13 +369,13 @@ class TodoApp {
             return;
         }
         
-        if (!window.googleAuth) {
+        if (!window.modernGoogleAuth) {
             this.showMessage('Authentication system not ready. Please refresh the page.', 'error');
             return;
         }
 
         try {
-            const success = await window.googleAuth.signIn();
+            const success = await window.modernGoogleAuth.signIn();
             if (success) {
                 this.isAuthenticated = true;
                 this.syncFromSheets(); // Load existing tasks from sheets
