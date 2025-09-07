@@ -10,6 +10,7 @@ class TodoApp {
     }
 
     async init() {
+        this.initDarkMode(); // Initialize dark mode
         this.setupEventListeners();
         this.updateDateDisplay();
         this.loadLocalTasks();
@@ -25,6 +26,32 @@ class TodoApp {
         }
         
         this.startAutoRollover();
+    }
+
+    initDarkMode() {
+        // Check for saved dark mode preference or default to light mode
+        const darkMode = localStorage.getItem('darkMode');
+        
+        if (darkMode === 'enabled') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        // Add dark mode toggle listener
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('click', () => this.toggleDarkMode());
+        }
+    }
+
+    toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        
+        // Save preference
+        if (document.body.classList.contains('dark-mode')) {
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            localStorage.setItem('darkMode', 'disabled');
+        }
     }
 
     setupEventListeners() {

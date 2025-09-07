@@ -24,12 +24,65 @@ body {
     padding-bottom: 20px;
 }
 
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
 .app-title {
     font-size: 32px;
     font-weight: 700;
     letter-spacing: 0.05em;
     color: #333333;
-    margin-bottom: 20px;
+    margin: 0;
+}
+
+/* Dark Mode Toggle */
+.dark-mode-toggle {
+    background: none;
+    border: 1px solid #E9ECEF;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #333333;
+}
+
+.dark-mode-toggle:hover {
+    background-color: #F8F9FA;
+    border-color: #007BFF;
+}
+
+.dark-mode-toggle .sun-icon,
+.dark-mode-toggle .moon-icon {
+    position: absolute;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.dark-mode-toggle .sun-icon {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+.dark-mode-toggle .moon-icon {
+    opacity: 0;
+    transform: rotate(-90deg);
+}
+
+body.dark-mode .dark-mode-toggle .sun-icon {
+    opacity: 0;
+    transform: rotate(90deg);
+}
+
+body.dark-mode .dark-mode-toggle .moon-icon {
+    opacity: 1;
+    transform: rotate(0deg);
 }
 
 .nav-tabs {
@@ -393,6 +446,229 @@ body {
 .message a {
     color: inherit;
     text-decoration: underline;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .container {
+    background-color: #1a1a1a;
+}
+
+body.dark-mode .header {
+    border-bottom-color: #333333;
+}
+
+body.dark-mode .app-title {
+    color: #e0e0e0;
+}
+
+body.dark-mode .dark-mode-toggle {
+    color: #e0e0e0;
+    border-color: #333333;
+}
+
+body.dark-mode .dark-mode-toggle:hover {
+    background-color: #2a2a2a;
+    border-color: #4A9EFF;
+}
+
+body.dark-mode .nav-tab {
+    color: #9CA3AF;
+}
+
+body.dark-mode .nav-tab:hover {
+    color: #e0e0e0;
+}
+
+body.dark-mode .nav-tab.active {
+    color: #4A9EFF;
+}
+
+body.dark-mode .nav-tab.active::after {
+    background-color: #4A9EFF;
+}
+
+body.dark-mode .task-input {
+    background-color: #2a2a2a;
+    border-color: #333333;
+    color: #e0e0e0;
+}
+
+body.dark-mode .task-input:focus {
+    border-color: #4A9EFF;
+}
+
+body.dark-mode .add-btn {
+    background-color: #007BFF;
+}
+
+body.dark-mode .add-btn:hover {
+    background-color: #4A9EFF;
+}
+
+body.dark-mode .section-title {
+    color: #e0e0e0;
+}
+
+body.dark-mode .date-display {
+    color: #9CA3AF;
+}
+
+body.dark-mode .tasks-container,
+body.dark-mode .metrics-section,
+body.dark-mode .settings-card,
+body.dark-mode .history-content {
+    background-color: #2a2a2a;
+    border-color: #333333;
+}
+
+body.dark-mode .tasks-subtitle {
+    color: #9CA3AF;
+}
+
+body.dark-mode .task-item {
+    border-bottom-color: #333333;
+}
+
+body.dark-mode .task-item:hover {
+    background-color: #333333;
+}
+
+body.dark-mode .task-text {
+    color: #e0e0e0;
+}
+
+body.dark-mode .task-item.completed .task-text {
+    color: #6C757D;
+}
+
+body.dark-mode .task-checkbox {
+    accent-color: #4A9EFF;
+    background-color: #2a2a2a;
+}
+
+body.dark-mode .task-delete {
+    color: #EF4444;
+}
+
+body.dark-mode .task-delete:hover {
+    color: #DC2626;
+}
+
+body.dark-mode .metric-label {
+    color: #9CA3AF;
+}
+
+body.dark-mode .metric-value {
+    color: #e0e0e0;
+}
+
+body.dark-mode .progress-bar {
+    background-color: #333333;
+}
+
+body.dark-mode .progress-fill.completion {
+    background-color: #10B981;
+}
+
+body.dark-mode .progress-fill.procrastination {
+    background-color: #F59E0B;
+}
+
+body.dark-mode .stats-summary {
+    border-top-color: #333333;
+}
+
+body.dark-mode .stat-label {
+    color: #9CA3AF;
+}
+
+body.dark-mode .stat-value {
+    color: #e0e0e0;
+}
+
+body.dark-mode .date-picker,
+body.dark-mode .settings-input {
+    background-color: #2a2a2a;
+    border-color: #333333;
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-secondary {
+    background-color: #2a2a2a;
+    color: #4A9EFF;
+    border-color: #4A9EFF;
+}
+
+body.dark-mode .btn-secondary:hover {
+    background-color: #4A9EFF;
+    color: #1a1a1a;
+}
+
+body.dark-mode .btn-primary {
+    background-color: #007BFF;
+}
+
+body.dark-mode .btn-primary:hover {
+    background-color: #4A9EFF;
+}
+
+body.dark-mode .auth-status {
+    color: #9CA3AF;
+}
+
+body.dark-mode .auth-status.success {
+    color: #10B981;
+}
+
+body.dark-mode .user-name {
+    color: #e0e0e0;
+}
+
+body.dark-mode .settings-label {
+    color: #e0e0e0;
+}
+
+body.dark-mode .history-day {
+    border-bottom-color: #333333;
+}
+
+body.dark-mode .history-date {
+    color: #e0e0e0;
+}
+
+body.dark-mode .history-metric {
+    color: #9CA3AF;
+}
+
+body.dark-mode .history-metric span {
+    color: #e0e0e0;
+}
+
+body.dark-mode .message {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .message.success {
+    background-color: #065F46;
+    color: #10B981;
+    border-color: #047857;
+}
+
+body.dark-mode .message.error {
+    background-color: #7F1D1D;
+    color: #EF4444;
+    border-color: #991B1B;
+}
+
+body.dark-mode .message.info {
+    background-color: #1E3A8A;
+    color: #60A5FA;
+    border-color: #1E40AF;
 }
 
 .sheet-config {
