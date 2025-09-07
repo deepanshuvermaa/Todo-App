@@ -295,105 +295,56 @@ class ModernGoogleAuth {
     }
 
     async checkUserSheet() {
-        try {
-            // First, try to search for any existing lifeTracker sheets in user's Drive
-            console.log('Searching for existing lifeTracker sheets...');
+        // Check for stored sheet ID from previous sessions
+        const storedSheetId = localStorage.getItem('userSheetId');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        if (storedSheetId) {
+            console.log('Found stored sheet ID, verifying access...');
             
-            // Try to load Drive API, but don't fail if it doesn't work
             try {
-                await gapi.client.load('drive', 'v3');
-                
-                const searchResponse = await gapi.client.drive.files.list({
-                    q: "name contains 'lifeTracker' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
-                    fields: 'files(id, name, createdTime)',
-                    orderBy: 'createdTime'
+                // Try to access the stored sheet
+                const response = await gapi.client.sheets.spreadsheets.get({
+                    spreadsheetId: storedSheetId
                 });
-            
-            if (searchResponse.result.files && searchResponse.result.files.length > 0) {
-                // Found existing sheet(s) - use the first (oldest) one
-                const existingSheet = searchResponse.result.files[0];
-                console.log('Found existing sheet:', existingSheet.name);
                 
-                // Verify we can access it
-                try {
-                    const sheetResponse = await gapi.client.sheets.spreadsheets.get({
-                        spreadsheetId: existingSheet.id
-                    });
+                if (response.result) {
+                    // Successfully accessed the sheet
+                    const sheetUrl = `https://docs.google.com/spreadsheets/d/${storedSheetId}`;
                     
-                    if (sheetResponse.result) {
-                        // Successfully accessed the sheet
-                        const sheetUrl = `https://docs.google.com/spreadsheets/d/${existingSheet.id}`;
-                        
-                        // Store sheet info
-                        localStorage.setItem('userSheetId', existingSheet.id);
-                        localStorage.setItem('userSheetUrl', sheetUrl);
-                        
-                        // Update UI
-                        if (document.getElementById('sheet-id')) {
-                            document.getElementById('sheet-id').value = existingSheet.id;
-                        }
-                        
-                        // Update app state
-                        window.todoApp.sheetId = existingSheet.id;
-                        window.todoApp.isAuthenticated = true;
-                        
-                        // Show View Sheet button
-                        const viewSheetBtn = document.getElementById('view-sheet-btn');
-                        if (viewSheetBtn) {
-                            viewSheetBtn.style.display = 'inline-flex';
-                            viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
-                        }
-                        
-                        this.showMessage(`Connected to existing sheet: ${existingSheet.name}`, 'success');
-                        return;
-                    }
-                } catch (accessError) {
-                    console.error('Could not access sheet:', accessError);
-                }
-            }
-            
-                // No existing sheets found or couldn't access them - create new one
-                console.log('No existing sheets found. Creating new sheet...');
-                await this.createUserSheet();
-                
-            } catch (driveError) {
-                console.log('Drive API not available, falling back to localStorage check');
-                // Drive API failed, fall back to checking localStorage
-                const storedSheetId = localStorage.getItem('userSheetId');
-                
-                if (storedSheetId) {
-                    await this.verifyStoredSheet(storedSheetId);
-                } else {
-                    await this.createUserSheet();
-                }
-            }
-            
-        } catch (error) {
-            console.error('Error checking for sheets:', error);
-            // If everything fails, try to use stored sheet ID as fallback
-            const storedSheetId = localStorage.getItem('userSheetId');
-            
-            if (storedSheetId) {
-                try {
-                    const response = await gapi.client.sheets.spreadsheets.get({
-                        spreadsheetId: storedSheetId
-                    });
-                    
-                    if (response.result) {
+                    // Update UI
+                    if (document.getElementById('sheet-id')) {
                         document.getElementById('sheet-id').value = storedSheetId;
-                        window.todoApp.sheetId = storedSheetId;
-                        window.todoApp.isAuthenticated = true;
-                        this.showMessage('Connected to existing sheet', 'success');
-                        return;
                     }
-                } catch (fallbackError) {
-                    console.error('Fallback sheet verification failed:', fallbackError);
+                    
+                    // Update app state
+                    window.todoApp.sheetId = storedSheetId;
+                    window.todoApp.isAuthenticated = true;
+                    
+                    // Show View Sheet button
+                    const viewSheetBtn = document.getElementById('view-sheet-btn');
+                    if (viewSheetBtn) {
+                        viewSheetBtn.style.display = 'inline-flex';
+                        viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
+                    }
+                    
+                    // Store the URL for future use
+                    localStorage.setItem('userSheetUrl', sheetUrl);
+                    
+                    this.showMessage('Connected to your existing sheet', 'success');
+                    return;
                 }
+            } catch (error) {
+                console.log('Could not access stored sheet, creating new one...');
+                // Clear invalid sheet ID
+                localStorage.removeItem('userSheetId');
+                localStorage.removeItem('userSheetUrl');
             }
-            
-            // All attempts failed - create new sheet
-            await this.createUserSheet();
         }
+        
+        // No valid stored sheet found - create a new one
+        console.log('Creating new sheet for user...');
+        await this.createUserSheet();
     }
 
     async verifyStoredSheet(sheetId) {

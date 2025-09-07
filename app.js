@@ -409,6 +409,77 @@ class TodoApp {
             }
         }
     }
+    
+    copySheetId() {
+        const sheetId = document.getElementById('sheet-id').value;
+        if (sheetId) {
+            navigator.clipboard.writeText(sheetId).then(() => {
+                this.showMessage('Sheet ID copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const input = document.createElement('input');
+                input.value = sheetId;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                this.showMessage('Sheet ID copied to clipboard!', 'success');
+            });
+        } else {
+            this.showMessage('No Sheet ID to copy', 'error');
+        }
+    }
+    
+    async connectToExistingSheet() {
+        const manualSheetId = document.getElementById('manual-sheet-id').value.trim();
+        
+        if (!manualSheetId) {
+            this.showMessage('Please enter a Sheet ID', 'error');
+            return;
+        }
+        
+        if (!this.isAuthenticated || !window.modernGoogleAuth || !window.modernGoogleAuth.isSignedIn) {
+            this.showMessage('Please sign in with Google first', 'error');
+            return;
+        }
+        
+        try {
+            // Verify the sheet exists and is accessible
+            const response = await gapi.client.sheets.spreadsheets.get({
+                spreadsheetId: manualSheetId
+            });
+            
+            if (response.result) {
+                // Successfully accessed the sheet
+                this.sheetId = manualSheetId;
+                localStorage.setItem('userSheetId', manualSheetId);
+                
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${manualSheetId}`;
+                localStorage.setItem('userSheetUrl', sheetUrl);
+                
+                // Update UI
+                document.getElementById('sheet-id').value = manualSheetId;
+                
+                // Show View Sheet button
+                const viewSheetBtn = document.getElementById('view-sheet-btn');
+                if (viewSheetBtn) {
+                    viewSheetBtn.style.display = 'inline-flex';
+                    viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
+                }
+                
+                // Clear the manual input
+                document.getElementById('manual-sheet-id').value = '';
+                
+                this.showMessage('Successfully connected to existing sheet!', 'success');
+                
+                // Sync data from the connected sheet
+                await this.syncFromSheets();
+            }
+        } catch (error) {
+            console.error('Failed to connect to sheet:', error);
+            this.showMessage('Could not access this Sheet ID. Make sure it exists and you have permission.', 'error');
+        }
+    }
 
     async syncToSheets() {
         if (!this.isAuthenticated || !this.sheetId) return;
