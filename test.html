@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App - Local Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        input {
+            padding: 8px;
+            width: 300px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Todo App - Quick Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Local Storage</h2>
+        <button onclick="testLocalStorage()">Test Local Storage</button>
+        <div id="storage-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Basic Task Operations</h2>
+        <input type="text" id="test-task" placeholder="Enter a test task">
+        <button onclick="addTestTask()">Add Task</button>
+        <button onclick="showTasks()">Show Tasks</button>
+        <div id="task-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Check Configuration</h2>
+        <button onclick="checkConfig()">Check Config</button>
+        <div id="config-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Open Main App</h2>
+        <button onclick="window.open('index.html', '_blank')">Open Todo App</button>
+    </div>
+
+    <script>
+        function testLocalStorage() {
+            const result = document.getElementById('storage-result');
+            try {
+                localStorage.setItem('test', 'Hello World');
+                const value = localStorage.getItem('test');
+                if (value === 'Hello World') {
+                    result.innerHTML = '<span class="success">✓ Local Storage is working!</span>';
+                } else {
+                    result.innerHTML = '<span class="error">✗ Local Storage read error</span>';
+                }
+                localStorage.removeItem('test');
+            } catch (e) {
+                result.innerHTML = '<span class="error">✗ Local Storage is not available: ' + e.message + '</span>';
+            }
+        }
+
+        function addTestTask() {
+            const input = document.getElementById('test-task');
+            const result = document.getElementById('task-result');
+            
+            if (!input.value.trim()) {
+                result.innerHTML = '<span class="error">Please enter a task</span>';
+                return;
+            }
+
+            try {
+                // Get existing tasks
+                let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                
+                // Add new task
+                const newTask = {
+                    id: Date.now(),
+                    text: input.value,
+                    completed: false,
+                    date: new Date().toISOString().split('T')[0]
+                };
+                
+                tasks.push(newTask);
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+                
+                result.innerHTML = '<span class="success">✓ Task added successfully!</span>';
+                input.value = '';
+            } catch (e) {
+                result.innerHTML = '<span class="error">✗ Error adding task: ' + e.message + '</span>';
+            }
+        }
+
+        function showTasks() {
+            const result = document.getElementById('task-result');
+            try {
+                const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                if (tasks.length === 0) {
+                    result.innerHTML = '<span class="info">No tasks found. Add some tasks first!</span>';
+                } else {
+                    let html = '<h3>Your Tasks:</h3><ul>';
+                    tasks.forEach(task => {
+                        html += `<li>${task.text} - ${task.completed ? '✓ Done' : '⏰ Pending'} (${task.date})</li>`;
+                    });
+                    html += '</ul>';
+                    result.innerHTML = html;
+                }
+            } catch (e) {
+                result.innerHTML = '<span class="error">✗ Error reading tasks: ' + e.message + '</span>';
+            }
+        }
+
+        function checkConfig() {
+            const result = document.getElementById('config-result');
+            
+            // Check if config.js is loaded
+            if (typeof CONFIG !== 'undefined') {
+                const isConfigured = CONFIG.GOOGLE_CLIENT_ID !== 'YOUR_CLIENT_ID.apps.googleusercontent.com';
+                
+                if (isConfigured) {
+                    result.innerHTML = `
+                        <span class="success">✓ Google API is configured!</span><br>
+                        <small>Client ID: ${CONFIG.GOOGLE_CLIENT_ID.substring(0, 20)}...</small>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <span class="info">ℹ Google API not configured yet.</span><br>
+                        <small>Follow SETUP_GUIDE.md to add your credentials.</small><br>
+                        <small>The app will work locally without Google integration.</small>
+                    `;
+                }
+            } else {
+                result.innerHTML = '<span class="error">✗ config.js not found!</span>';
+            }
+        }
+
+        // Auto-run tests on load
+        window.onload = function() {
+            console.log('Todo App Test Page Loaded');
+        }
+    </script>
+    
+    <script src="config.js"></script>
+</body>
+</html>
