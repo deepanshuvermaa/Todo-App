@@ -95,11 +95,16 @@ class TodoApp {
         });
 
         // History
-        document.getElementById('load-history-btn').addEventListener('click', () => this.loadHistory());
+        const loadHistoryBtn = document.getElementById('load-history-btn');
+        if (loadHistoryBtn) {
+            loadHistoryBtn.addEventListener('click', () => this.loadHistory());
+        }
 
-        // Settings
-        document.getElementById('google-signin').addEventListener('click', () => this.handleGoogleSignIn());
-        document.getElementById('save-sheet-btn').addEventListener('click', () => this.saveSheetConfig());
+        // Settings - Note: google-signin is handled by google-auth.js
+        const saveSheetBtn = document.getElementById('save-sheet-btn');
+        if (saveSheetBtn) {
+            saveSheetBtn.addEventListener('click', () => this.saveSheetConfig());
+        }
     }
 
     switchTab(tabName) {

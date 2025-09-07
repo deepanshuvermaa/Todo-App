@@ -296,17 +296,18 @@ class ModernGoogleAuth {
 
     async checkUserSheet() {
         try {
-            // First, search for any existing lifeTracker sheets in user's Drive
+            // First, try to search for any existing lifeTracker sheets in user's Drive
             console.log('Searching for existing lifeTracker sheets...');
             
-            // Load Drive API
-            await gapi.client.load('drive', 'v3');
-            
-            const searchResponse = await gapi.client.drive.files.list({
-                q: "name contains 'lifeTracker' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
-                fields: 'files(id, name, createdTime)',
-                orderBy: 'createdTime'
-            });
+            // Try to load Drive API, but don't fail if it doesn't work
+            try {
+                await gapi.client.load('drive', 'v3');
+                
+                const searchResponse = await gapi.client.drive.files.list({
+                    q: "name contains 'lifeTracker' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+                    fields: 'files(id, name, createdTime)',
+                    orderBy: 'createdTime'
+                });
             
             if (searchResponse.result.files && searchResponse.result.files.length > 0) {
                 // Found existing sheet(s) - use the first (oldest) one
@@ -351,13 +352,25 @@ class ModernGoogleAuth {
                 }
             }
             
-            // No existing sheets found or couldn't access them - create new one
-            console.log('No existing sheets found. Creating new sheet...');
-            await this.createUserSheet();
+                // No existing sheets found or couldn't access them - create new one
+                console.log('No existing sheets found. Creating new sheet...');
+                await this.createUserSheet();
+                
+            } catch (driveError) {
+                console.log('Drive API not available, falling back to localStorage check');
+                // Drive API failed, fall back to checking localStorage
+                const storedSheetId = localStorage.getItem('userSheetId');
+                
+                if (storedSheetId) {
+                    await this.verifyStoredSheet(storedSheetId);
+                } else {
+                    await this.createUserSheet();
+                }
+            }
             
         } catch (error) {
             console.error('Error checking for sheets:', error);
-            // If search fails, try to use stored sheet ID as fallback
+            // If everything fails, try to use stored sheet ID as fallback
             const storedSheetId = localStorage.getItem('userSheetId');
             
             if (storedSheetId) {
@@ -383,6 +396,38 @@ class ModernGoogleAuth {
         }
     }
 
+    async verifyStoredSheet(sheetId) {
+        try {
+            const response = await gapi.client.sheets.spreadsheets.get({
+                spreadsheetId: sheetId
+            });
+            
+            if (response.result) {
+                const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}`;
+                
+                // Update UI
+                if (document.getElementById('sheet-id')) {
+                    document.getElementById('sheet-id').value = sheetId;
+                }
+                
+                window.todoApp.sheetId = sheetId;
+                window.todoApp.isAuthenticated = true;
+                
+                // Show View Sheet button
+                const viewSheetBtn = document.getElementById('view-sheet-btn');
+                if (viewSheetBtn) {
+                    viewSheetBtn.style.display = 'inline-flex';
+                    viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
+                }
+                
+                this.showMessage('Connected to existing sheet', 'success');
+            }
+        } catch (error) {
+            console.error('Sheet verification failed:', error);
+            await this.createUserSheet();
+        }
+    }
+    
     async createUserSheet() {
         try {
             const response = await gapi.client.sheets.spreadsheets.create({
