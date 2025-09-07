@@ -3,8 +3,8 @@
 
 const CONFIG = {
     // Google OAuth2 Configuration
-    GOOGLE_CLIENT_ID: 'YOUR_CLIENT_ID.apps.googleusercontent.com',
-    GOOGLE_API_KEY: 'YOUR_API_KEY',
+    GOOGLE_CLIENT_ID: '995916217406-3o8864q7ikdgjsrqr95qhgg0k25kuub7.apps.googleusercontent.com',
+    GOOGLE_API_KEY: 'YOUR_API_KEY', // Replace this after you create the API key
     
     // Google Sheets API Configuration
     DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
