@@ -295,12 +295,17 @@ class ModernGoogleAuth {
     }
 
     async checkUserSheet() {
-        // Check for stored sheet ID from previous sessions
-        const storedSheetId = localStorage.getItem('userSheetId');
-        const userEmail = localStorage.getItem('userEmail');
+        // Get current user email
+        const userEmail = this.currentUser?.email || localStorage.getItem('userEmail');
+        
+        // Create a unique key for this user's sheet
+        const userSheetKey = userEmail ? `sheet_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : 'userSheetId';
+        
+        // Check for stored sheet ID for THIS specific user
+        const storedSheetId = localStorage.getItem(userSheetKey);
         
         if (storedSheetId) {
-            console.log('Found stored sheet ID, verifying access...');
+            console.log(`Found stored sheet ID for ${userEmail}, verifying access...`);
             
             try {
                 // Try to access the stored sheet
@@ -311,6 +316,11 @@ class ModernGoogleAuth {
                 if (response.result) {
                     // Successfully accessed the sheet
                     const sheetUrl = `https://docs.google.com/spreadsheets/d/${storedSheetId}`;
+                    
+                    // Store in both user-specific and general keys
+                    localStorage.setItem(userSheetKey, storedSheetId);
+                    localStorage.setItem('userSheetId', storedSheetId);
+                    localStorage.setItem('userSheetUrl', sheetUrl);
                     
                     // Update UI
                     if (document.getElementById('sheet-id')) {
@@ -328,22 +338,20 @@ class ModernGoogleAuth {
                         viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
                     }
                     
-                    // Store the URL for future use
-                    localStorage.setItem('userSheetUrl', sheetUrl);
-                    
-                    this.showMessage('Connected to your existing sheet', 'success');
+                    this.showMessage(`Connected to your sheet for ${userEmail}`, 'success');
                     return;
                 }
             } catch (error) {
-                console.log('Could not access stored sheet, creating new one...');
+                console.log('Could not access stored sheet, will create new one...');
                 // Clear invalid sheet ID
+                localStorage.removeItem(userSheetKey);
                 localStorage.removeItem('userSheetId');
                 localStorage.removeItem('userSheetUrl');
             }
         }
         
         // No valid stored sheet found - create a new one
-        console.log('Creating new sheet for user...');
+        console.log(`Creating new sheet for ${userEmail}...`);
         await this.createUserSheet();
     }
 
@@ -409,7 +417,11 @@ class ModernGoogleAuth {
                 }
             });
 
-            // Store sheet information
+            // Store sheet information with user-specific key
+            const userEmail = this.currentUser?.email || localStorage.getItem('userEmail');
+            const userSheetKey = userEmail ? `sheet_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : 'userSheetId';
+            
+            localStorage.setItem(userSheetKey, spreadsheetId);
             localStorage.setItem('userSheetId', spreadsheetId);
             localStorage.setItem('userSheetUrl', spreadsheetUrl);
             

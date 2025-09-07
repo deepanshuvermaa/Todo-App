@@ -430,6 +430,33 @@ class TodoApp {
         }
     }
     
+    clearLocalSheet() {
+        if (confirm('This will disconnect you from the current sheet. You will need to reconnect or create a new sheet. Continue?')) {
+            // Clear all sheet-related localStorage
+            const userEmail = localStorage.getItem('userEmail');
+            const userSheetKey = userEmail ? `sheet_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : 'userSheetId';
+            
+            localStorage.removeItem(userSheetKey);
+            localStorage.removeItem('userSheetId');
+            localStorage.removeItem('userSheetUrl');
+            
+            // Clear UI
+            document.getElementById('sheet-id').value = '';
+            document.getElementById('manual-sheet-id').value = '';
+            
+            // Hide view sheet button
+            const viewSheetBtn = document.getElementById('view-sheet-btn');
+            if (viewSheetBtn) {
+                viewSheetBtn.style.display = 'none';
+            }
+            
+            // Reset app state
+            this.sheetId = null;
+            
+            this.showMessage('Local sheet data cleared. Please reconnect or create a new sheet.', 'info');
+        }
+    }
+    
     async connectToExistingSheet() {
         const manualSheetId = document.getElementById('manual-sheet-id').value.trim();
         
@@ -452,6 +479,12 @@ class TodoApp {
             if (response.result) {
                 // Successfully accessed the sheet
                 this.sheetId = manualSheetId;
+                
+                // Store with user-specific key
+                const userEmail = localStorage.getItem('userEmail');
+                const userSheetKey = userEmail ? `sheet_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : 'userSheetId';
+                
+                localStorage.setItem(userSheetKey, manualSheetId);
                 localStorage.setItem('userSheetId', manualSheetId);
                 
                 const sheetUrl = `https://docs.google.com/spreadsheets/d/${manualSheetId}`;

@@ -793,7 +793,7 @@
                                     </svg>
                                     VIEW MY GOOGLE SHEET
                                 </button>
-                                <button id="copy-sheet-id-btn" class="btn-secondary" onclick="app.copySheetId()">
+                                <button id="copy-sheet-id-btn" class="btn-secondary" onclick="window.todoApp.copySheetId()">
                                     COPY SHEET ID
                                 </button>
                             </div>
@@ -802,11 +802,20 @@
                             
                             <label class="settings-label">Connect to Existing Sheet (for multi-device sync):</label>
                             <input type="text" id="manual-sheet-id" class="settings-input" placeholder="Paste Sheet ID from another device">
-                            <button id="connect-sheet-btn" class="btn-primary" onclick="app.connectToExistingSheet()">
+                            <button id="connect-sheet-btn" class="btn-primary" onclick="window.todoApp.connectToExistingSheet()">
                                 CONNECT TO EXISTING SHEET
                             </button>
                             <p style="font-size: 12px; color: #666; margin-top: 10px;">
                                 To sync across devices: Copy the Sheet ID from your first device and paste it here.
+                            </p>
+                            
+                            <div class="settings-divider" style="margin: 20px 0; border-top: 1px solid #e9ecef;"></div>
+                            
+                            <button id="clear-local-btn" class="btn-secondary" onclick="window.todoApp.clearLocalSheet()" style="background: #dc3545; color: white;">
+                                CLEAR LOCAL SHEET DATA
+                            </button>
+                            <p style="font-size: 11px; color: #999; margin-top: 5px;">
+                                Use this if you want to disconnect from current sheet and start fresh.
                             </p>
                         </div>
                     </div>
