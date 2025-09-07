@@ -263,28 +263,50 @@ class TodoApp {
 
     // Google Sheets Integration
     async initGoogleAPI() {
-        if (typeof gapi !== 'undefined' && window.googleAuth) {
+        // Wait for gapi to load
+        let retries = 0;
+        while (typeof gapi === 'undefined' && retries < 10) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            retries++;
+        }
+        
+        if (typeof gapi !== 'undefined') {
+            if (!window.googleAuth) {
+                window.googleAuth = new GoogleAuthManager();
+            }
+            
             try {
                 await window.googleAuth.initialize();
                 this.gapiLoaded = true;
+                console.log('Google API initialized successfully');
             } catch (error) {
                 console.error('Failed to initialize Google API:', error);
-                this.showMessage('Google API initialization failed. Some features may be limited.', 'error');
+                // Don't show error for local mode, it's expected
+                if (CONFIG.GOOGLE_CLIENT_ID !== 'YOUR_API_KEY') {
+                    this.showMessage('Google API is loading. Please wait a moment and try again.', 'info');
+                }
             }
+        } else {
+            console.log('Google API library not available');
         }
     }
 
     async handleGoogleSignIn() {
         // Check if Google API is configured
         if (typeof CONFIG === 'undefined' || CONFIG.GOOGLE_CLIENT_ID === 'YOUR_CLIENT_ID.apps.googleusercontent.com') {
-            this.showMessage('Please configure Google API credentials in config.js first. See SETUP_GUIDE.md for instructions.', 'error');
+            this.showMessage('Please configure Google API credentials in config.js first.', 'error');
             return;
         }
         
         if (!this.gapiLoaded) {
-            this.showMessage('Google API is still loading. Please wait a moment and try again.', 'info');
+            this.showMessage('Initializing Google services. Please wait...', 'info');
             // Try to initialize again
-            setTimeout(() => this.initGoogleAPI(), 1000);
+            await this.initGoogleAPI();
+            
+            // Try sign in again if successful
+            if (this.gapiLoaded) {
+                await this.handleGoogleSignIn();
+            }
             return;
         }
         
