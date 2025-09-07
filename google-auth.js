@@ -44,6 +44,10 @@ class ModernGoogleAuth {
                     
                     // Initialize the Google Identity Services client
                     this.initializeGISClient();
+                    
+                    // Check for existing authentication
+                    this.checkExistingAuth();
+                    
                     resolve(true);
                 } catch (error) {
                     console.error('Failed to initialize Google API client:', error);
@@ -72,6 +76,62 @@ class ModernGoogleAuth {
         });
         
         console.log('Google Identity Services client initialized');
+        
+        // Set up sign in button
+        const signInBtn = document.getElementById('google-signin');
+        if (signInBtn) {
+            signInBtn.addEventListener('click', () => {
+                this.signIn();
+            });
+        }
+    }
+    
+    checkExistingAuth() {
+        // Check for existing authentication in localStorage
+        const storedToken = localStorage.getItem('googleAccessToken');
+        const tokenExpiry = localStorage.getItem('tokenExpiry');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        if (storedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
+            // Token exists and is not expired
+            this.accessToken = storedToken;
+            this.isSignedIn = true;
+            
+            // Set the access token for API calls
+            gapi.client.setToken({
+                access_token: this.accessToken
+            });
+            
+            // Update UI
+            this.updateUIForSignedIn();
+            
+            // Display stored user info
+            if (userEmail) {
+                const authStatus = document.getElementById('auth-status');
+                if (authStatus) {
+                    authStatus.innerHTML = `
+                        <div class="user-info">
+                            <span class="user-name">✓ Connected as: ${userEmail}</span>
+                            <button id="google-signout" class="btn-secondary">SIGN OUT</button>
+                        </div>
+                    `;
+                    authStatus.className = 'auth-status success';
+                    
+                    // Add sign out event listener
+                    document.getElementById('google-signout').addEventListener('click', () => {
+                        this.signOut();
+                    });
+                }
+            }
+            
+            // Refresh user info if needed
+            this.getUserInfo();
+        } else {
+            // Token expired or doesn't exist, clear everything
+            localStorage.removeItem('googleAccessToken');
+            localStorage.removeItem('tokenExpiry');
+            localStorage.removeItem('userEmail');
+        }
     }
 
     async signIn() {
@@ -98,6 +158,10 @@ class ModernGoogleAuth {
         // Store the access token
         this.accessToken = response.access_token;
         this.isSignedIn = true;
+        
+        // Store token in localStorage for persistence
+        localStorage.setItem('googleAccessToken', this.accessToken);
+        localStorage.setItem('tokenExpiry', Date.now() + (3600 * 1000)); // 1 hour expiry
         
         // Set the access token for API calls
         gapi.client.setToken({
@@ -138,9 +202,12 @@ class ModernGoogleAuth {
     updateUserDisplay(userInfo) {
         const authStatus = document.getElementById('auth-status');
         if (authStatus && userInfo) {
+            // Store email for persistence
+            localStorage.setItem('userEmail', userInfo.email);
+            
             authStatus.innerHTML = `
                 <div class="user-info">
-                    <span class="user-name">Signed in as: ${userInfo.email}</span>
+                    <span class="user-name">✓ Connected as: ${userInfo.email}</span>
                     <button id="google-signout" class="btn-secondary">SIGN OUT</button>
                 </div>
             `;
@@ -213,7 +280,10 @@ class ModernGoogleAuth {
         this.isSignedIn = false;
         this.currentUser = null;
         
-        // Clear stored sheet info
+        // Clear stored authentication and sheet info
+        localStorage.removeItem('googleAccessToken');
+        localStorage.removeItem('tokenExpiry');
+        localStorage.removeItem('userEmail');
         localStorage.removeItem('userSheetId');
         localStorage.removeItem('userSheetUrl');
         

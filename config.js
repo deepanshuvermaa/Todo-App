@@ -11,8 +11,8 @@ const CONFIG = {
     SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
     
     // App Configuration
-    APP_NAME: 'Beginner Todo App',
-    SHEET_NAME: 'Todo App Data',
+    APP_NAME: 'lifeTracker',
+    SHEET_NAME: 'lifeTracker Data',
     
     // Optional: Google Apps Script Web App URL (if using server-side functions)
     APPS_SCRIPT_URL: '' // Leave empty if not using Apps Script backend
