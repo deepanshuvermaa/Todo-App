@@ -274,22 +274,30 @@ class QuoteManager {
             { quote: "Your time is limited, don't waste it living someone else's life.", author: "Steve Jobs" }
         ];
         
-        // Get a random quote that hasn't been shown recently
-        const shownQuotes = JSON.parse(localStorage.getItem('shownQuotes') || '[]');
-        let availableQuotes = fallbackQuotes.filter(q => !shownQuotes.includes(q.quote));
+        // Implement better randomization with Fisher-Yates shuffle
+        const shuffleArray = (array) => {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        };
         
-        if (availableQuotes.length === 0) {
-            // Reset if all quotes have been shown
-            availableQuotes = fallbackQuotes;
-            localStorage.setItem('shownQuotes', '[]');
+        // Get quote queue from localStorage or create new shuffled queue
+        let quoteQueue = JSON.parse(localStorage.getItem('quoteQueue') || '[]');
+        
+        if (quoteQueue.length === 0) {
+            // Create new shuffled queue when all quotes have been shown
+            quoteQueue = shuffleArray(fallbackQuotes);
+            console.log('Created new shuffled quote queue with', quoteQueue.length, 'quotes');
         }
         
-        const randomQuote = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
+        // Get next quote from queue
+        const randomQuote = quoteQueue.shift();
         
-        // Track shown quotes
-        shownQuotes.push(randomQuote.quote);
-        if (shownQuotes.length > 50) shownQuotes.shift(); // Keep only last 50
-        localStorage.setItem('shownQuotes', JSON.stringify(shownQuotes));
+        // Save updated queue
+        localStorage.setItem('quoteQueue', JSON.stringify(quoteQueue));
         
         this.displayQuote(randomQuote);
         this.cacheQuote(randomQuote);

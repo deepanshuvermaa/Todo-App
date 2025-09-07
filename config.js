@@ -7,8 +7,11 @@ const CONFIG = {
     GOOGLE_API_KEY: 'AIzaSyDcNSfA1rOQxCZ9Drm7vYosb4ewPZyzBpo',
     
     // Google Sheets API Configuration
-    DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-    SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+    DISCOVERY_DOCS: [
+        'https://sheets.googleapis.com/$discovery/rest?version=v4',
+        'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+    ],
+    SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly',
     
     // App Configuration
     APP_NAME: 'lifeTracker',

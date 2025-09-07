@@ -295,25 +295,90 @@ class ModernGoogleAuth {
     }
 
     async checkUserSheet() {
-        const storedSheetId = localStorage.getItem('userSheetId');
-        
-        if (storedSheetId) {
-            try {
-                const response = await gapi.client.sheets.spreadsheets.get({
-                    spreadsheetId: storedSheetId
-                });
+        try {
+            // First, search for any existing lifeTracker sheets in user's Drive
+            console.log('Searching for existing lifeTracker sheets...');
+            
+            // Load Drive API
+            await gapi.client.load('drive', 'v3');
+            
+            const searchResponse = await gapi.client.drive.files.list({
+                q: "name contains 'lifeTracker' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+                fields: 'files(id, name, createdTime)',
+                orderBy: 'createdTime'
+            });
+            
+            if (searchResponse.result.files && searchResponse.result.files.length > 0) {
+                // Found existing sheet(s) - use the first (oldest) one
+                const existingSheet = searchResponse.result.files[0];
+                console.log('Found existing sheet:', existingSheet.name);
                 
-                if (response.result) {
-                    document.getElementById('sheet-id').value = storedSheetId;
-                    window.todoApp.sheetId = storedSheetId;
-                    window.todoApp.isAuthenticated = true;
-                    this.showMessage('Connected to existing sheet', 'success');
+                // Verify we can access it
+                try {
+                    const sheetResponse = await gapi.client.sheets.spreadsheets.get({
+                        spreadsheetId: existingSheet.id
+                    });
+                    
+                    if (sheetResponse.result) {
+                        // Successfully accessed the sheet
+                        const sheetUrl = `https://docs.google.com/spreadsheets/d/${existingSheet.id}`;
+                        
+                        // Store sheet info
+                        localStorage.setItem('userSheetId', existingSheet.id);
+                        localStorage.setItem('userSheetUrl', sheetUrl);
+                        
+                        // Update UI
+                        if (document.getElementById('sheet-id')) {
+                            document.getElementById('sheet-id').value = existingSheet.id;
+                        }
+                        
+                        // Update app state
+                        window.todoApp.sheetId = existingSheet.id;
+                        window.todoApp.isAuthenticated = true;
+                        
+                        // Show View Sheet button
+                        const viewSheetBtn = document.getElementById('view-sheet-btn');
+                        if (viewSheetBtn) {
+                            viewSheetBtn.style.display = 'inline-flex';
+                            viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
+                        }
+                        
+                        this.showMessage(`Connected to existing sheet: ${existingSheet.name}`, 'success');
+                        return;
+                    }
+                } catch (accessError) {
+                    console.error('Could not access sheet:', accessError);
                 }
-            } catch (error) {
-                console.error('Sheet verification error:', error);
-                await this.createUserSheet();
             }
-        } else {
+            
+            // No existing sheets found or couldn't access them - create new one
+            console.log('No existing sheets found. Creating new sheet...');
+            await this.createUserSheet();
+            
+        } catch (error) {
+            console.error('Error checking for sheets:', error);
+            // If search fails, try to use stored sheet ID as fallback
+            const storedSheetId = localStorage.getItem('userSheetId');
+            
+            if (storedSheetId) {
+                try {
+                    const response = await gapi.client.sheets.spreadsheets.get({
+                        spreadsheetId: storedSheetId
+                    });
+                    
+                    if (response.result) {
+                        document.getElementById('sheet-id').value = storedSheetId;
+                        window.todoApp.sheetId = storedSheetId;
+                        window.todoApp.isAuthenticated = true;
+                        this.showMessage('Connected to existing sheet', 'success');
+                        return;
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback sheet verification failed:', fallbackError);
+                }
+            }
+            
+            // All attempts failed - create new sheet
             await this.createUserSheet();
         }
     }
