@@ -157,6 +157,7 @@ class ModernGoogleAuth {
         const authStatus = document.getElementById('auth-status');
         const signInBtn = document.getElementById('google-signin');
         const sheetConfig = document.getElementById('sheet-config');
+        const viewSheetBtn = document.getElementById('view-sheet-btn');
         
         if (authStatus) {
             authStatus.className = 'auth-status success';
@@ -168,6 +169,13 @@ class ModernGoogleAuth {
         
         if (sheetConfig) {
             sheetConfig.style.display = 'block';
+        }
+        
+        // Show View Sheet button if we have a sheet URL
+        const sheetUrl = localStorage.getItem('userSheetUrl');
+        if (viewSheetBtn && sheetUrl) {
+            viewSheetBtn.style.display = 'inline-flex';
+            viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
         }
         
         // Check for existing sheet

@@ -712,6 +712,147 @@ body.dark-mode .setup-error-container button {
     margin-top: 30px;
 }
 
+.sheet-actions {
+    margin-top: 15px;
+}
+
+/* About Section Styles */
+.about-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-section {
+    margin-bottom: 40px;
+}
+
+.about-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E9ECEF;
+    padding: 30px;
+    border-radius: 8px;
+}
+
+.feature-list {
+    margin-top: 20px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+.feature-icon {
+    font-size: 20px;
+    min-width: 30px;
+    color: #007BFF;
+}
+
+.steps-container {
+    margin-top: 20px;
+}
+
+.step-item {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #E9ECEF;
+}
+
+.step-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.step-number {
+    min-width: 40px;
+    height: 40px;
+    background-color: #007BFF;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.step-content h3 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    color: #333333;
+}
+
+.step-content p {
+    margin: 0;
+    color: #6C757D;
+    line-height: 1.6;
+}
+
+.storage-list {
+    margin: 20px 0;
+    padding-left: 20px;
+}
+
+.storage-list li {
+    margin-bottom: 10px;
+    color: #333333;
+}
+
+.privacy-note {
+    background-color: #F0F9FF;
+    border-left: 4px solid #007BFF;
+    padding: 15px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0C5460;
+}
+
+.privacy-note svg {
+    min-width: 20px;
+}
+
+/* Dark mode for About section */
+body.dark-mode .about-card {
+    background-color: #2a2a2a;
+    border-color: #333333;
+}
+
+body.dark-mode .step-content h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .step-content p {
+    color: #9CA3AF;
+}
+
+body.dark-mode .storage-list li {
+    color: #e0e0e0;
+}
+
+body.dark-mode .privacy-note {
+    background-color: #1E3A8A;
+    color: #60A5FA;
+    border-color: #4A9EFF;
+}
+
+body.dark-mode .step-item {
+    border-bottom-color: #333333;
+}
+
+body.dark-mode .feature-icon {
+    color: #4A9EFF;
+}
+
+body.dark-mode .step-number {
+    background-color: #4A9EFF;
+}
+
 .settings-label {
     display: block;
     font-size: 14px;
