@@ -35,6 +35,11 @@ class TodoApp {
         }
         
         this.startAutoRollover();
+        
+        // Trigger initial rollover check after a brief delay to ensure everything is loaded
+        setTimeout(() => {
+            this.checkAndPerformRollover();
+        }, 2000);
     }
 
     setupNetworkHandlers() {
@@ -752,7 +757,7 @@ class TodoApp {
         }, 60000); // Check every minute
     }
 
-    checkAndPerformRollover() {
+    async checkAndPerformRollover() {
         const now = new Date();
         const lastProcessedDate = localStorage.getItem('lastProcessedDate');
         const todayStr = now.toISOString().split('T')[0];
@@ -760,7 +765,7 @@ class TodoApp {
         // If it's a new day or first time running
         if (!lastProcessedDate || lastProcessedDate !== todayStr) {
             console.log(`Date changed from ${lastProcessedDate} to ${todayStr}. Performing rollover...`);
-            this.performRollover(lastProcessedDate, todayStr);
+            await this.performRollover(lastProcessedDate, todayStr);
             localStorage.setItem('lastProcessedDate', todayStr);
             this.currentDate = now; // Update current date
             this.updateDateDisplay();
@@ -770,17 +775,24 @@ class TodoApp {
     async performRollover(previousDateStr, newDateStr) {
         if (!previousDateStr) {
             // First time running, no rollover needed
+            console.log('First time running, no rollover needed');
             return;
         }
+
+        console.log(`Performing rollover from ${previousDateStr} to ${newDateStr}`);
 
         // Get all tasks from the previous date
         const previousTasks = this.tasks.filter(task => task.date === previousDateStr);
         const incompleteTasks = previousTasks.filter(task => !task.completed);
         const completedTasks = previousTasks.filter(task => task.completed);
 
+        console.log(`Found ${completedTasks.length} completed and ${incompleteTasks.length} incomplete tasks for ${previousDateStr}`);
+
         // First, update the previous day's row in Google Sheets if authenticated
         if (this.isAuthenticated && this.sheetId) {
             await this.updatePreviousDayInSheets(previousDateStr, completedTasks, incompleteTasks);
+        } else {
+            console.log('Not authenticated or no sheet ID, skipping sheet update');
         }
 
         // Roll over incomplete tasks to today
@@ -804,6 +816,7 @@ class TodoApp {
                         rolledOver: true
                     };
                     this.tasks.push(newTask);
+                    console.log(`Rolled over task: ${task.text}`);
                 }
             });
 
@@ -813,21 +826,33 @@ class TodoApp {
             
             // Sync new day's tasks to sheets
             if (this.isAuthenticated && this.sheetId) {
+                console.log('Syncing rolled over tasks to sheets...');
+                await this.syncToSheets();
+            }
+        } else {
+            console.log('No incomplete tasks to roll over');
+            // Still create today's row if authenticated
+            if (this.isAuthenticated && this.sheetId) {
                 await this.syncToSheets();
             }
         }
     }
 
     async updatePreviousDayInSheets(dateStr, completedTasks, incompleteTasks) {
-        if (!this.isAuthenticated || !this.sheetId) return;
+        if (!this.isAuthenticated || !this.sheetId) {
+            console.log('Cannot update sheets - not authenticated or no sheet ID');
+            return;
+        }
 
         try {
+            console.log(`Updating previous day ${dateStr} in sheets...`);
+            
             // Format completed tasks for column B
             const completedTasksStr = completedTasks.map((task, index) => {
                 return `${index + 1}- ${task.text} - done`;
             }).join('\n');
 
-            // Format incomplete tasks for column C
+            // Format incomplete tasks for column C (these are "not done today")
             const incompleteTasksStr = incompleteTasks.map((task, index) => {
                 return `${index + 1}- ${task.text}`;
             }).join('\n');
@@ -835,48 +860,84 @@ class TodoApp {
             // Find the row for the previous date
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: this.sheetId,
-                range: 'Sheet1!A:A'
+                range: 'Sheet1!A:C'
             });
 
-            const dates = response.result.values || [];
-            const rowIndex = dates.findIndex(row => row[0] === dateStr);
+            const rows = response.result.values || [];
+            const rowIndex = rows.findIndex(row => row && row[0] === dateStr);
 
             if (rowIndex > -1) {
                 // Update the existing row with completed tasks in B and incomplete in C
+                const updateValues = [
+                    dateStr, 
+                    completedTasksStr || 'No tasks completed', 
+                    incompleteTasksStr || ''
+                ];
+                
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: this.sheetId,
                     range: `Sheet1!A${rowIndex + 1}:C${rowIndex + 1}`,
                     valueInputOption: 'USER_ENTERED',
                     resource: {
-                        values: [[dateStr, completedTasksStr || 'No tasks completed', incompleteTasksStr || 'All tasks completed']]
+                        values: [updateValues]
                     }
                 });
-                console.log(`Updated ${dateStr} row: ${completedTasks.length} completed, ${incompleteTasks.length} incomplete`);
+                
+                console.log(`✅ Updated ${dateStr} row: ${completedTasks.length} completed, ${incompleteTasks.length} moved to 'not done' column`);
+            } else {
+                console.log(`⚠️  Row for ${dateStr} not found in sheets`);
+                // Create the row if it doesn't exist
+                const newValues = [
+                    dateStr, 
+                    completedTasksStr || 'No tasks completed', 
+                    incompleteTasksStr || ''
+                ];
+                
+                await gapi.client.sheets.spreadsheets.values.append({
+                    spreadsheetId: this.sheetId,
+                    range: 'Sheet1!A:C',
+                    valueInputOption: 'USER_ENTERED',
+                    insertDataOption: 'INSERT_ROWS',
+                    resource: {
+                        values: [newValues]
+                    }
+                });
+                
+                console.log(`✅ Created new row for ${dateStr}`);
             }
         } catch (error) {
-            console.error('Error updating previous day in sheets:', error);
+            console.error('❌ Error updating previous day in sheets:', error);
+            this.showMessage(`Failed to update ${dateStr} in Google Sheets`, 'error');
         }
     }
 
     async manualRollover() {
-        console.log('Manual rollover triggered');
+        console.log('🔄 Manual rollover triggered');
         
-        // Get yesterday's date
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        
-        // Get today's date
-        const todayStr = new Date().toISOString().split('T')[0];
-        
-        // Force rollover from yesterday to today
-        await this.performRollover(yesterdayStr, todayStr);
-        
-        // Update the last processed date
-        localStorage.setItem('lastProcessedDate', todayStr);
-        
-        this.showMessage('Task rollover completed! Check your Google Sheet.', 'success');
+        try {
+            // Get yesterday's date
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            // Get today's date
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            console.log(`Manual rollover: ${yesterdayStr} → ${todayStr}`);
+            
+            // Force rollover from yesterday to today
+            await this.performRollover(yesterdayStr, todayStr);
+            
+            // Update the last processed date
+            localStorage.setItem('lastProcessedDate', todayStr);
+            
+            this.showMessage('✅ Task rollover completed! Check your Google Sheet.', 'success');
+        } catch (error) {
+            console.error('❌ Manual rollover failed:', error);
+            this.showMessage('❌ Task rollover failed. Check console for details.', 'error');
+        }
     }
+
 
     showMessage(message, type) {
         console.log(`[${type}] ${message}`);
