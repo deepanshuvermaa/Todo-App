@@ -690,75 +690,17 @@ class MealTracker {
     }
 
     async syncToSheets() {
-        if (!window.todoApp || !window.todoApp.isAuthenticated || !window.todoApp.sheetId) return;
-
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const todaysMeals = this.getTodaysMeals();
-            
-            // Prepare data for sheets
-            const mealData = todaysMeals.map(meal => [
-                today,
-                meal.type,
-                meal.food,
-                `${meal.quantity} ${meal.unit}`,
-                meal.nutrition.calories,
-                meal.nutrition.protein,
-                meal.nutrition.carbs,
-                meal.nutrition.fats,
-                meal.nutrition.fiber,
-                meal.time
-            ]);
-
-            // Add headers if first row
-            const headers = ['Date', 'Meal Type', 'Food', 'Quantity', 'Calories', 'Protein', 'Carbs', 'Fats', 'Fiber', 'Time'];
-            
-            // Check if Meals sheet exists, if not create it
-            await this.ensureMealsSheet();
-            
-            // Update sheet
-            await gapi.client.sheets.spreadsheets.values.update({
-                spreadsheetId: window.todoApp.sheetId,
-                range: 'Meals!A1:J' + (mealData.length + 1),
-                valueInputOption: 'USER_ENTERED',
-                resource: {
-                    values: [headers, ...mealData]
-                }
-            });
-
-            // Also sync user profile if exists
-            if (this.userProfile) {
-                await this.syncUserProfile();
+        // Use main app's comprehensive sync system
+        if (window.todoApp && window.todoApp.isAuthenticated && window.todoApp.sheetId) {
+            try {
+                await window.todoApp.syncToSheetsWithRetry();
+            } catch (error) {
+                console.error('Failed to sync meals to sheets:', error);
             }
-        } catch (error) {
-            console.error('Failed to sync meals to sheets:', error);
         }
     }
 
-    async ensureMealsSheet() {
-        try {
-            // Try to add a new sheet for meals
-            await gapi.client.sheets.spreadsheets.batchUpdate({
-                spreadsheetId: window.todoApp.sheetId,
-                resource: {
-                    requests: [{
-                        addSheet: {
-                            properties: {
-                                title: 'Meals',
-                                gridProperties: {
-                                    rowCount: 1000,
-                                    columnCount: 10
-                                }
-                            }
-                        }
-                    }]
-                }
-            });
-        } catch (error) {
-            // Sheet might already exist, that's okay
-            console.log('Meals sheet might already exist');
-        }
-    }
+    // Sheet creation and management now handled by main app comprehensive sync
 
     async syncUserProfile() {
         if (!this.userProfile || !window.todoApp.sheetId) return;

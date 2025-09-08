@@ -721,62 +721,284 @@ class TodoApp {
         if (!this.isAuthenticated || !this.sheetId) return;
 
         try {
-            const todayStr = this.currentDate.toISOString().split('T')[0];
-            const todayTasks = this.tasks.filter(task => task.date === todayStr);
+            console.log('🔄 Starting comprehensive sync to Google Sheets...');
+            
+            // Ensure all required sheets exist
+            await this.ensureRequiredSheets();
+            
+            // Sync all data types
+            await this.syncTasksToSheet();
+            await this.syncExpensesToSheet();
+            await this.syncMealsToSheet();
+            await this.syncNotesToSheet();
+            
+            this.lastSyncTime = new Date();
+            console.log('✅ Complete sync to Google Sheets successful');
+        } catch (error) {
+            console.error('❌ Comprehensive sync error:', error);
+            this.showMessage('Failed to sync all data with Google Sheets', 'error');
+            throw error;
+        }
+    }
 
-            const todoTasks = todayTasks.map((task, index) => {
-                const prefix = index + 1 + '- ';
-                const suffix = task.completed ? ' - done' : '';
-                return prefix + task.text + suffix;
-            }).join('\n');
-
-            // Check if row exists for today
-            const response = await gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: this.sheetId,
-                range: 'Sheet1!A:A'
+    async ensureRequiredSheets() {
+        try {
+            // Get current sheets
+            const response = await gapi.client.sheets.spreadsheets.get({
+                spreadsheetId: this.sheetId
             });
 
-            const dates = response.result.values || [];
-            const rowIndex = dates.findIndex(row => row[0] === todayStr);
+            const existingSheets = response.result.sheets.map(sheet => sheet.properties.title);
+            const requiredSheets = ['Tasks', 'Expenses', 'Meals', 'Notes'];
 
-            if (rowIndex > -1) {
-                // Update existing row - Column C stays empty for current day
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: this.sheetId,
-                    range: `Sheet1!A${rowIndex + 1}:B${rowIndex + 1}`,
-                    valueInputOption: 'USER_ENTERED',
-                    resource: {
-                        values: [[todayStr, todoTasks || 'No tasks']]
+            // Create missing sheets
+            const sheetsToCreate = requiredSheets.filter(sheet => !existingSheets.includes(sheet));
+            
+            if (sheetsToCreate.length > 0) {
+                console.log('Creating missing sheets:', sheetsToCreate);
+                
+                const requests = sheetsToCreate.map(sheetName => ({
+                    addSheet: {
+                        properties: {
+                            title: sheetName
+                        }
                     }
-                });
-            } else {
-                // Append new row - Column C empty for current day
-                await gapi.client.sheets.spreadsheets.values.append({
+                }));
+
+                await gapi.client.sheets.spreadsheets.batchUpdate({
                     spreadsheetId: this.sheetId,
-                    range: 'Sheet1!A:C',
-                    valueInputOption: 'USER_ENTERED',
-                    insertDataOption: 'INSERT_ROWS',
-                    resource: {
-                        values: [[todayStr, todoTasks || 'No tasks', '']]
-                    }
+                    resource: { requests }
                 });
+                
+                // Add headers for each new sheet
+                for (const sheetName of sheetsToCreate) {
+                    await this.addSheetHeaders(sheetName);
+                }
             }
-
-            this.lastSyncTime = new Date();
-            console.log('Synced to Google Sheets');
         } catch (error) {
-            console.error('Sync error:', error);
-            this.showMessage('Failed to sync with Google Sheets', 'error');
+            console.error('Error ensuring sheets exist:', error);
+            throw error;
         }
+    }
+
+    async addSheetHeaders(sheetName) {
+        const headers = {
+            'Tasks': ['Date', 'Tasks To Do Today', 'Tasks Not Done Today'],
+            'Expenses': ['Date', 'Category', 'Amount', 'Description', 'Total Day'],
+            'Meals': ['Date', 'Meal Type', 'Food Item', 'Calories', 'Total Calories'],
+            'Notes': ['Date', 'Title', 'Content', 'Tags']
+        };
+
+        if (headers[sheetName]) {
+            await gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId: this.sheetId,
+                range: `${sheetName}!A1:${String.fromCharCode(65 + headers[sheetName].length - 1)}1`,
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: [headers[sheetName]]
+                }
+            });
+        }
+    }
+
+    async syncTasksToSheet() {
+        const todayStr = this.currentDate.toISOString().split('T')[0];
+        const todayTasks = this.tasks.filter(task => task.date === todayStr);
+
+        const todoTasks = todayTasks.map((task, index) => {
+            const prefix = index + 1 + '- ';
+            const suffix = task.completed ? ' - done' : '';
+            return prefix + task.text + suffix;
+        }).join('\n');
+
+        // Check if row exists for today
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: this.sheetId,
+            range: 'Tasks!A:A'
+        });
+
+        const dates = response.result.values || [];
+        const rowIndex = dates.findIndex(row => row && row[0] === todayStr);
+
+        if (rowIndex > -1) {
+            // Update existing row - Column C stays empty for current day
+            await gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId: this.sheetId,
+                range: `Tasks!A${rowIndex + 1}:B${rowIndex + 1}`,
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: [[todayStr, todoTasks || 'No tasks']]
+                }
+            });
+        } else {
+            // Append new row - Column C empty for current day
+            await gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: this.sheetId,
+                range: 'Tasks!A:C',
+                valueInputOption: 'USER_ENTERED',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: [[todayStr, todoTasks || 'No tasks', '']]
+                }
+            });
+        }
+    }
+
+    async syncExpensesToSheet() {
+        const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+        
+        if (expenses.length === 0) return;
+
+        // Group expenses by date for daily totals
+        const expensesByDate = {};
+        expenses.forEach(expense => {
+            if (!expensesByDate[expense.date]) {
+                expensesByDate[expense.date] = [];
+            }
+            expensesByDate[expense.date].push(expense);
+        });
+
+        // Prepare data for sync
+        const expenseRows = [];
+        Object.keys(expensesByDate).forEach(date => {
+            const dayExpenses = expensesByDate[date];
+            const dayTotal = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+            
+            dayExpenses.forEach((expense, index) => {
+                expenseRows.push([
+                    date,
+                    expense.category,
+                    expense.amount,
+                    expense.description || '',
+                    index === 0 ? dayTotal : '' // Show total only on first row of each day
+                ]);
+            });
+        });
+
+        // Clear existing data and add new
+        await gapi.client.sheets.spreadsheets.values.clear({
+            spreadsheetId: this.sheetId,
+            range: 'Expenses!A2:E'
+        });
+
+        if (expenseRows.length > 0) {
+            await gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: this.sheetId,
+                range: 'Expenses!A2:E',
+                valueInputOption: 'USER_ENTERED',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: expenseRows
+                }
+            });
+        }
+    }
+
+    async syncMealsToSheet() {
+        const meals = JSON.parse(localStorage.getItem('meals') || '[]');
+        
+        if (meals.length === 0) return;
+
+        // Group meals by date for daily totals
+        const mealsByDate = {};
+        meals.forEach(meal => {
+            if (!mealsByDate[meal.date]) {
+                mealsByDate[meal.date] = [];
+            }
+            mealsByDate[meal.date].push(meal);
+        });
+
+        // Prepare data for sync
+        const mealRows = [];
+        Object.keys(mealsByDate).forEach(date => {
+            const dayMeals = mealsByDate[date];
+            const dayTotalCalories = dayMeals.reduce((sum, m) => sum + (m.calories || 0), 0);
+            
+            dayMeals.forEach((meal, index) => {
+                mealRows.push([
+                    date,
+                    meal.mealType,
+                    meal.food,
+                    meal.calories || 0,
+                    index === 0 ? dayTotalCalories : '' // Show total only on first row of each day
+                ]);
+            });
+        });
+
+        // Clear existing data and add new
+        await gapi.client.sheets.spreadsheets.values.clear({
+            spreadsheetId: this.sheetId,
+            range: 'Meals!A2:E'
+        });
+
+        if (mealRows.length > 0) {
+            await gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: this.sheetId,
+                range: 'Meals!A2:E',
+                valueInputOption: 'USER_ENTERED',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: mealRows
+                }
+            });
+        }
+    }
+
+    async syncNotesToSheet() {
+        const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+        
+        if (notes.length === 0) return;
+
+        const noteRows = notes.map(note => [
+            note.date,
+            note.title,
+            note.content,
+            note.tags ? note.tags.join(', ') : ''
+        ]);
+
+        // Clear existing data and add new
+        await gapi.client.sheets.spreadsheets.values.clear({
+            spreadsheetId: this.sheetId,
+            range: 'Notes!A2:D'
+        });
+
+        await gapi.client.sheets.spreadsheets.values.append({
+            spreadsheetId: this.sheetId,
+            range: 'Notes!A2:D',
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+                values: noteRows
+            }
+        });
     }
 
     async syncFromSheets() {
         if (!this.isAuthenticated || !this.sheetId) return;
 
         try {
+            console.log('🔄 Starting comprehensive sync from Google Sheets...');
+            
+            // Sync all data types from sheets
+            await this.syncTasksFromSheet();
+            await this.syncExpensesFromSheet();
+            await this.syncMealsFromSheet();
+            await this.syncNotesFromSheet();
+
+            console.log('✅ Complete sync from Google Sheets successful');
+            this.showMessage('✅ All data synced from Google Sheets successfully!', 'success');
+
+        } catch (error) {
+            console.error('❌ Sync from sheets error:', error);
+            this.showMessage('Failed to sync from Google Sheets', 'error');
+        }
+    }
+
+    async syncTasksFromSheet() {
+        try {
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: this.sheetId,
-                range: 'Sheet1!A:C'
+                range: 'Tasks!A:C'
             });
 
             const rows = response.result.values || [];
@@ -797,34 +1019,145 @@ class TodoApp {
                             const text = match[1];
                             const completed = text.endsWith(' - done');
                             const cleanText = completed ? text.slice(0, -7) : text;
-                            
+
                             importedTasks.push({
                                 id: Date.now() + Math.random(),
                                 text: cleanText,
-                                completed: completed,
-                                date: date
+                                completed,
+                                date,
+                                priority: 'medium'
                             });
                         }
                     });
                 }
             });
 
-            // Merge with existing local tasks (avoid duplicates)
-            const localTasksMap = new Map(this.tasks.map(t => [`${t.date}-${t.text}`, t]));
-            importedTasks.forEach(task => {
-                const key = `${task.date}-${task.text}`;
-                if (!localTasksMap.has(key)) {
-                    this.tasks.push(task);
-                }
-            });
-
+            // Replace local tasks with imported ones
+            this.tasks = importedTasks;
             this.saveTasks();
             this.renderTasks();
             this.updateMetrics();
-            this.showMessage('Tasks synced from Google Sheets', 'success');
+
+            console.log(`✅ Imported ${importedTasks.length} tasks from Google Sheets`);
         } catch (error) {
-            console.error('Sync from sheets error:', error);
-            this.showMessage('Failed to load tasks from Google Sheets', 'error');
+            console.error('❌ Failed to sync tasks from sheets:', error);
+        }
+    }
+
+    async syncExpensesFromSheet() {
+        try {
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: this.sheetId,
+                range: 'Expenses!A:E'
+            });
+
+            const rows = response.result.values || [];
+            const importedExpenses = [];
+
+            rows.forEach((row, index) => {
+                if (index === 0) return; // Skip header row
+                
+                const [date, category, amount, description] = row;
+                
+                if (date && category && amount) {
+                    importedExpenses.push({
+                        id: Date.now() + Math.random(),
+                        date,
+                        category,
+                        amount: parseFloat(amount),
+                        description: description || ''
+                    });
+                }
+            });
+
+            // Replace local expenses with imported ones
+            localStorage.setItem('expenses', JSON.stringify(importedExpenses));
+            
+            // Refresh expense UI if expense manager exists
+            if (window.expenseManager) {
+                window.expenseManager.loadExpenses();
+                window.expenseManager.updateAnalytics();
+            }
+
+            console.log(`✅ Imported ${importedExpenses.length} expenses from Google Sheets`);
+        } catch (error) {
+            console.error('❌ Failed to sync expenses from sheets:', error);
+        }
+    }
+
+    async syncMealsFromSheet() {
+        try {
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: this.sheetId,
+                range: 'Meals!A:E'
+            });
+
+            const rows = response.result.values || [];
+            const importedMeals = [];
+
+            rows.forEach((row, index) => {
+                if (index === 0) return; // Skip header row
+                
+                const [date, mealType, food, calories] = row;
+                
+                if (date && mealType && food) {
+                    importedMeals.push({
+                        id: Date.now() + Math.random(),
+                        date,
+                        mealType,
+                        food,
+                        calories: parseFloat(calories) || 0
+                    });
+                }
+            });
+
+            // Replace local meals with imported ones
+            localStorage.setItem('meals', JSON.stringify(importedMeals));
+            
+            // Refresh meals UI if meal manager exists
+            if (window.mealTracker) {
+                window.mealTracker.loadMeals();
+                window.mealTracker.updateNutritionSummary();
+            }
+
+            console.log(`✅ Imported ${importedMeals.length} meals from Google Sheets`);
+        } catch (error) {
+            console.error('❌ Failed to sync meals from sheets:', error);
+        }
+    }
+
+    async syncNotesFromSheet() {
+        try {
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: this.sheetId,
+                range: 'Notes!A:D'
+            });
+
+            const rows = response.result.values || [];
+            const importedNotes = [];
+
+            rows.forEach((row, index) => {
+                if (index === 0) return; // Skip header row
+                
+                const [date, title, content, tags] = row;
+                
+                if (date && title) {
+                    importedNotes.push({
+                        id: Date.now() + Math.random(),
+                        date,
+                        title,
+                        content: content || '',
+                        tags: tags ? tags.split(', ').filter(tag => tag.trim()) : []
+                    });
+                }
+            });
+
+            // Replace local notes with imported ones
+            localStorage.setItem('notes', JSON.stringify(importedNotes));
+
+            console.log(`✅ Imported ${importedNotes.length} notes from Google Sheets`);
+        } catch (error) {
+            console.error('❌ Failed to sync notes from sheets:', error);
         }
     }
 
@@ -1149,13 +1482,74 @@ class TodoApp {
         this.updateCollapsedSummaries();
     }
     
+    async reAuthenticate() {
+        try {
+            console.log('🔄 Re-authenticating with Google...');
+            this.showMessage('🔄 Logging out and re-authenticating...', 'info');
+            
+            // Sign out first
+            if (this.isAuthenticated) {
+                await gapi.auth2.getAuthInstance().signOut();
+            }
+            
+            // Clear authentication state
+            this.isAuthenticated = false;
+            localStorage.removeItem('googleAccessToken');
+            
+            // Update UI to show signed out state
+            this.updateAuthUI();
+            
+            // Wait a moment then re-authenticate
+            setTimeout(() => {
+                this.authenticateGoogleSheets();
+                this.showMessage('Please complete Google login again...', 'info');
+            }, 1000);
+            
+        } catch (error) {
+            console.error('❌ Re-authentication error:', error);
+            this.showMessage('Re-authentication failed. Try refreshing the page.', 'error');
+        }
+    }
+    
+    async forceSyncAllData() {
+        try {
+            console.log('🔄 Force syncing all data to Google Sheets...');
+            this.showMessage('🔄 Force syncing all data...', 'info');
+            
+            if (!this.isAuthenticated || !this.sheetId) {
+                this.showMessage('❌ Not authenticated or no sheet connected. Please login first.', 'error');
+                return;
+            }
+            
+            // Force sync with retry
+            await this.syncToSheetsWithRetry();
+            this.showMessage('✅ Force sync completed successfully!', 'success');
+            
+        } catch (error) {
+            console.error('❌ Force sync error:', error);
+            this.showMessage('❌ Force sync failed. Check console and try re-login.', 'error');
+        }
+    }
+
     showMessage(message, type) {
         console.log(`[${type}] ${message}`);
         
         // Create a temporary notification
         const notification = document.createElement('div');
         notification.className = `message ${type}`;
-        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1000; max-width: 300px;';
+        notification.style.cssText = `
+            position: fixed; 
+            top: 80px; 
+            right: 20px; 
+            z-index: 1000; 
+            max-width: 350px; 
+            padding: 15px; 
+            border-radius: 8px; 
+            color: white; 
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#007bff'};
+        `;
         notification.innerHTML = message;
         
         document.body.appendChild(notification);

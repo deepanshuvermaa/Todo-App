@@ -1373,6 +1373,19 @@
                                 Forces incomplete tasks from previous day to move to "Tasks Not Done" column and roll over to today
                             </small>
                             
+                            <div class="settings-divider" style="margin: 20px 0; border-top: 1px solid #e9ecef;"></div>
+                            
+                            <label class="settings-label">Re-authenticate & Force Sync:</label>
+                            <button id="re-login-btn" class="btn-primary" onclick="window.todoApp.reAuthenticate()" style="background: #dc3545; margin-right: 10px;">
+                                RE-LOGIN TO GOOGLE
+                            </button>
+                            <button id="force-sync-btn" class="btn-secondary" onclick="window.todoApp.forceSyncAllData()">
+                                FORCE SYNC ALL DATA
+                            </button>
+                            <small style="display: block; margin-top: 5px; color: #6c757d;">
+                                Re-login if sync fails, or force sync all data (tasks, expenses, meals, notes) to Google Sheets
+                            </small>
+                            
                             <p style="font-size: 12px; color: #666; margin-top: 10px;">
                                 To sync across devices: Copy the Sheet ID from your first device and paste it here.
                             </p>

@@ -133,6 +133,9 @@ class ExpenseManager {
         this.renderExpenses();
         this.updateAnalytics();
 
+        // Sync to Google Sheets if connected
+        this.syncToGoogleSheets();
+
         // Clear inputs
         amountInput.value = '';
         categorySelect.value = '';
@@ -140,10 +143,14 @@ class ExpenseManager {
 
         // Show success message
         this.showMessage(`Expense of ₹${amount.toFixed(2)} added`, 'success');
+    }
 
-        // Sync to Google Sheets if connected
+    syncToGoogleSheets() {
+        // Trigger sync via main app if available
         if (window.todoApp && window.todoApp.isAuthenticated && window.todoApp.sheetId) {
-            this.syncToSheets();
+            window.todoApp.syncToSheetsWithRetry().catch(error => {
+                console.error('Failed to sync expenses to sheets:', error);
+            });
         }
     }
 
