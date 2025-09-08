@@ -40,6 +40,9 @@ class TodoApp {
         setTimeout(() => {
             this.checkAndPerformRollover();
         }, 2000);
+        
+        // Initialize collapsible sections
+        this.initializeCollapsibleSections();
     }
 
     setupNetworkHandlers() {
@@ -305,8 +308,86 @@ class TodoApp {
             this.renderTasks();
             this.updateMetrics();
             
+            // Show immediate feedback
+            this.showMessage(completed ? '✅ Task marked as completed!' : '↩️ Task reopened!', 'success');
+            
+            // Sync to sheets with error handling
             if (this.isAuthenticated && this.sheetId) {
-                this.syncToSheets();
+                this.syncToSheetsWithRetry();
+            } else {
+                this.showMessage('⚠️ Not synced to Google Sheets - check connection in Settings', 'warning');
+            }
+        }
+    }
+    
+    async syncToSheetsWithRetry(retries = 3) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                // Show sync status
+                this.updateSyncStatus('syncing');
+                await this.syncToSheets();
+                this.updateSyncStatus('success');
+                return; // Success, exit
+            } catch (error) {
+                console.error(`Sync attempt ${i + 1} failed:`, error);
+                
+                if (i === retries - 1) {
+                    // Final attempt failed
+                    this.updateSyncStatus('failed');
+                    this.showMessage('❌ Failed to sync with Google Sheets. Check connection and try manual sync.', 'error');
+                    
+                    // Store failed sync for later retry
+                    this.storePendingSync();
+                } else {
+                    // Wait before retry
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                }
+            }
+        }
+    }
+    
+    updateSyncStatus(status) {
+        // Update UI sync indicator
+        const syncIndicator = document.getElementById('sync-status-indicator');
+        if (syncIndicator) {
+            switch(status) {
+                case 'syncing':
+                    syncIndicator.innerHTML = '🔄 Syncing...';
+                    syncIndicator.className = 'sync-status syncing';
+                    break;
+                case 'success':
+                    syncIndicator.innerHTML = '✅ Synced';
+                    syncIndicator.className = 'sync-status success';
+                    setTimeout(() => {
+                        syncIndicator.innerHTML = '☁️ Connected';
+                    }, 2000);
+                    break;
+                case 'failed':
+                    syncIndicator.innerHTML = '❌ Sync Failed';
+                    syncIndicator.className = 'sync-status failed';
+                    break;
+            }
+        }
+    }
+    
+    storePendingSync() {
+        // Store current state for later sync
+        const pendingData = {
+            tasks: this.tasks,
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('pendingSync', JSON.stringify(pendingData));
+    }
+    
+    async attemptPendingSync() {
+        const pendingData = localStorage.getItem('pendingSync');
+        if (pendingData && this.isAuthenticated && this.sheetId) {
+            try {
+                await this.syncToSheetsWithRetry();
+                localStorage.removeItem('pendingSync');
+                this.showMessage('✅ Pending changes synced successfully!', 'success');
+            } catch (error) {
+                console.error('Failed to sync pending changes:', error);
             }
         }
     }
@@ -939,6 +1020,135 @@ class TodoApp {
     }
 
 
+    initializeCollapsibleSections() {
+        // Make toggle function globally available
+        window.toggleSection = (sectionId) => this.toggleSection(sectionId);
+        
+        // Load saved preferences
+        this.loadSectionPreferences();
+        
+        // Update summaries for collapsed sections
+        this.updateCollapsedSummaries();
+    }
+    
+    toggleSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        const toggle = document.getElementById(sectionId.replace('-', '-toggle').replace('expenses-breakdown', 'breakdown-toggle').replace('monthly-overview', 'monthly-toggle'));
+        
+        if (section) {
+            section.classList.toggle('collapsed');
+            const isCollapsed = section.classList.contains('collapsed');
+            
+            // Update toggle button
+            if (toggle) {
+                toggle.textContent = isCollapsed ? '▼' : '▲';
+            }
+            
+            // Save preference
+            this.saveSectionPreference(sectionId, isCollapsed);
+            
+            // Update summary if collapsed
+            if (isCollapsed) {
+                this.updateSectionSummary(sectionId);
+            }
+        }
+    }
+    
+    saveSectionPreference(sectionId, isCollapsed) {
+        const preferences = JSON.parse(localStorage.getItem('sectionPreferences') || '{}');
+        preferences[sectionId] = isCollapsed;
+        localStorage.setItem('sectionPreferences', JSON.stringify(preferences));
+    }
+    
+    loadSectionPreferences() {
+        const preferences = JSON.parse(localStorage.getItem('sectionPreferences') || '{}');
+        
+        // Default: sections are collapsed
+        const defaultCollapsed = {
+            'expenses-breakdown': true,
+            'monthly-overview': true,
+            'meal-breakfast': true,
+            'meal-lunch': true,
+            'meal-snack': true,
+            'meal-dinner': true
+        };
+        
+        Object.keys(defaultCollapsed).forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                const shouldCollapse = preferences[sectionId] !== undefined ? preferences[sectionId] : defaultCollapsed[sectionId];
+                if (shouldCollapse) {
+                    section.classList.add('collapsed');
+                    const toggle = document.getElementById(sectionId.replace('-', '-toggle').replace('expenses-breakdown', 'breakdown-toggle').replace('monthly-overview', 'monthly-toggle'));
+                    if (toggle) {
+                        toggle.textContent = '▼';
+                    }
+                } else {
+                    section.classList.remove('collapsed');
+                }
+            }
+        });
+    }
+    
+    updateCollapsedSummaries() {
+        // Update expense breakdown summary
+        const breakdownSummary = document.getElementById('breakdown-summary');
+        if (breakdownSummary) {
+            const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            const today = new Date().toISOString().split('T')[0];
+            const todayExpenses = expenses.filter(e => e.date === today);
+            const total = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const count = todayExpenses.length;
+            
+            if (count > 0) {
+                breakdownSummary.textContent = `₹${total.toFixed(0)} in ${count} transactions`;
+            } else {
+                breakdownSummary.textContent = 'No expenses today';
+            }
+        }
+        
+        // Update monthly summary
+        const monthlySummary = document.getElementById('monthly-summary');
+        if (monthlySummary) {
+            const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const monthExpenses = expenses.filter(e => {
+                const expDate = new Date(e.date);
+                return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+            });
+            
+            const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+            monthlySummary.textContent = `₹${total.toFixed(0)} this month`;
+        }
+        
+        // Update meal summaries
+        const meals = JSON.parse(localStorage.getItem('meals') || '[]');
+        const today = new Date().toISOString().split('T')[0];
+        const todayMeals = meals.filter(m => m.date === today);
+        
+        const mealTypes = ['breakfast', 'lunch', 'snack', 'dinner'];
+        mealTypes.forEach(type => {
+            const summary = document.getElementById(`${type}-summary`);
+            if (summary) {
+                const typeMeals = todayMeals.filter(m => m.mealType === type);
+                const calories = typeMeals.reduce((sum, m) => sum + (m.calories || 0), 0);
+                
+                if (typeMeals.length > 0) {
+                    summary.textContent = `${typeMeals.length} items, ${Math.round(calories)} cal`;
+                } else {
+                    summary.textContent = 'No meals';
+                }
+            }
+        });
+    }
+    
+    updateSectionSummary(sectionId) {
+        // Update specific section summary when collapsed
+        this.updateCollapsedSummaries();
+    }
+    
     showMessage(message, type) {
         console.log(`[${type}] ${message}`);
         

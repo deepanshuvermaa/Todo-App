@@ -92,7 +92,10 @@
         <header class="header">
             <div class="header-top">
                 <h1 class="app-title">lifeTracker</h1>
-                <button id="dark-mode-toggle" class="dark-mode-toggle" aria-label="Toggle dark mode">
+                <div id="sync-status-indicator" class="sync-status" style="margin-left: 15px; font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #f0f0f0; display: inline-block;">
+                    ☁️ Checking...
+                </div>
+                <button id="dark-mode-toggle" class="dark-mode-toggle" aria-label="Toggle dark mode" style="margin-left: auto;">
                     <svg class="sun-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="5"></circle>
                         <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -308,15 +311,26 @@
                         <!-- Analytics & Budget -->
                         <div class="expense-analytics-section">
                             <!-- Daily Analytics -->
-                            <div class="analytics-card">
-                                <h3 class="analytics-title">TODAY'S BREAKDOWN</h3>
-                                <div id="category-breakdown" class="category-breakdown"></div>
+                            <div class="analytics-card collapsible-section">
+                                <div class="section-header collapsible-header" onclick="window.toggleSection('expenses-breakdown')">
+                                    <h3 class="analytics-title">TODAY'S BREAKDOWN</h3>
+                                    <span class="section-summary" id="breakdown-summary">View details</span>
+                                    <button class="collapse-toggle" id="breakdown-toggle">▼</button>
+                                </div>
+                                <div id="expenses-breakdown" class="collapsible-content collapsed">
+                                    <div id="category-breakdown" class="category-breakdown"></div>
+                                </div>
                             </div>
 
                             <!-- Monthly Overview -->
-                            <div class="analytics-card">
-                                <h3 class="analytics-title">MONTHLY OVERVIEW</h3>
-                                <div class="monthly-stats">
+                            <div class="analytics-card collapsible-section">
+                                <div class="section-header collapsible-header" onclick="window.toggleSection('monthly-overview')">
+                                    <h3 class="analytics-title">MONTHLY OVERVIEW</h3>
+                                    <span class="section-summary" id="monthly-summary"></span>
+                                    <button class="collapse-toggle" id="monthly-toggle">▼</button>
+                                </div>
+                                <div id="monthly-overview" class="collapsible-content collapsed">
+                                    <div class="monthly-stats">
                                     <div class="stat-item">
                                         <span class="stat-label">Month Total:</span>
                                         <span class="stat-value" id="month-total">₹0.00</span>
@@ -329,6 +343,7 @@
                                         <span class="stat-label">Highest Day:</span>
                                         <span class="stat-value" id="highest-day">₹0.00</span>
                                     </div>
+                                </div>
                                 </div>
                             </div>
 
@@ -681,21 +696,45 @@
                             <div class="date-display" id="meal-date"></div>
                             
                             <div class="meals-by-type">
-                                <div class="meal-category" id="breakfast-meals">
-                                    <h3>🌅 Breakfast</h3>
-                                    <ul class="meal-list"></ul>
+                                <div class="meal-category collapsible-section" id="breakfast-meals">
+                                    <div class="section-header collapsible-header" onclick="window.toggleSection('meal-breakfast')">
+                                        <h3>🌅 Breakfast</h3>
+                                        <span class="section-summary" id="breakfast-summary">No meals</span>
+                                        <button class="collapse-toggle" id="breakfast-toggle">▼</button>
+                                    </div>
+                                    <div id="meal-breakfast" class="collapsible-content collapsed">
+                                        <ul class="meal-list"></ul>
+                                    </div>
                                 </div>
-                                <div class="meal-category" id="lunch-meals">
-                                    <h3>☀️ Lunch</h3>
-                                    <ul class="meal-list"></ul>
+                                <div class="meal-category collapsible-section" id="lunch-meals">
+                                    <div class="section-header collapsible-header" onclick="window.toggleSection('meal-lunch')">
+                                        <h3>☀️ Lunch</h3>
+                                        <span class="section-summary" id="lunch-summary">No meals</span>
+                                        <button class="collapse-toggle" id="lunch-toggle">▼</button>
+                                    </div>
+                                    <div id="meal-lunch" class="collapsible-content collapsed">
+                                        <ul class="meal-list"></ul>
+                                    </div>
                                 </div>
-                                <div class="meal-category" id="snack-meals">
-                                    <h3>🍿 Snacks</h3>
-                                    <ul class="meal-list"></ul>
+                                <div class="meal-category collapsible-section" id="snack-meals">
+                                    <div class="section-header collapsible-header" onclick="window.toggleSection('meal-snack')">
+                                        <h3>🍿 Snacks</h3>
+                                        <span class="section-summary" id="snack-summary">No meals</span>
+                                        <button class="collapse-toggle" id="snack-toggle">▼</button>
+                                    </div>
+                                    <div id="meal-snack" class="collapsible-content collapsed">
+                                        <ul class="meal-list"></ul>
+                                    </div>
                                 </div>
-                                <div class="meal-category" id="dinner-meals">
-                                    <h3>🌙 Dinner</h3>
-                                    <ul class="meal-list"></ul>
+                                <div class="meal-category collapsible-section" id="dinner-meals">
+                                    <div class="section-header collapsible-header" onclick="window.toggleSection('meal-dinner')">
+                                        <h3>🌙 Dinner</h3>
+                                        <span class="section-summary" id="dinner-summary">No meals</span>
+                                        <button class="collapse-toggle" id="dinner-toggle">▼</button>
+                                    </div>
+                                    <div id="meal-dinner" class="collapsible-content collapsed">
+                                        <ul class="meal-list"></ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
