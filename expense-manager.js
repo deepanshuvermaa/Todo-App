@@ -7,6 +7,8 @@ class ExpenseManager {
             categories: {}
         };
         this.currentDate = new Date();
+        this.budgetAlerts = [];
+        this.dismissedAlerts = JSON.parse(localStorage.getItem('dismissedBudgetAlerts') || '[]');
         this.init();
     }
 
@@ -55,6 +57,30 @@ class ExpenseManager {
         if (budgetBtn) {
             budgetBtn.addEventListener('click', () => this.saveBudget());
         }
+
+        // Toggle category budgets
+        const toggleBtn = document.getElementById('toggle-category-budgets');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const categoryBudgets = document.getElementById('category-budgets');
+                if (categoryBudgets) {
+                    const isVisible = categoryBudgets.style.display !== 'none';
+                    categoryBudgets.style.display = isVisible ? 'none' : 'block';
+                    toggleBtn.textContent = isVisible ? 'Setup Categories' : 'Hide Categories';
+                }
+            });
+        }
+
+        // Save category budgets button
+        const saveCategoryBtn = document.getElementById('save-category-budgets');
+        if (saveCategoryBtn) {
+            saveCategoryBtn.addEventListener('click', () => this.saveCategoryBudgets());
+        }
+
+        // Category budget inputs - save on change
+        document.querySelectorAll('.category-budget-input').forEach(input => {
+            input.addEventListener('blur', () => this.saveCategoryBudgets());
+        });
     }
 
     updateExpenseDate() {
@@ -97,6 +123,9 @@ class ExpenseManager {
             tags: this.autoGenerateTags(category, description),
             linkedTaskId: this.checkForLinkedTask()
         };
+        
+        // Check budget before adding
+        this.checkBudgetAlert(category, amount);
 
         // Add to expenses array
         this.expenses.push(expense);
@@ -221,6 +250,7 @@ class ExpenseManager {
         this.updateMonthlyStats();
         this.updateCategoryBreakdown();
         this.updateBudgetStatus();
+        this.updateCategoryBudgetStatus();
         this.updateCategoryChart();
     }
 
@@ -404,6 +434,354 @@ class ExpenseManager {
         }
     }
 
+    saveCategoryBudgets() {
+        const categoryBudgetItems = document.querySelectorAll('.category-budget-item');
+        
+        categoryBudgetItems.forEach(item => {
+            const category = item.dataset.category;
+            const input = item.querySelector('.category-budget-input');
+            const amount = parseFloat(input.value) || 0;
+            
+            if (amount > 0) {
+                this.budget.categories[category] = amount;
+            } else {
+                delete this.budget.categories[category];
+            }
+        });
+        
+        localStorage.setItem('expenseBudget', JSON.stringify(this.budget));
+        this.updateCategoryBudgetStatus();
+        this.showMessage('Category budgets saved', 'success');
+    }
+
+    updateCategoryBudgetStatus() {
+        const currentMonth = this.currentDate.getMonth();
+        const currentYear = this.currentDate.getFullYear();
+
+        const monthExpenses = this.expenses.filter(expense => {
+            const expenseDate = new Date(expense.date);
+            return expenseDate.getMonth() === currentMonth && 
+                   expenseDate.getFullYear() === currentYear;
+        });
+
+        // Calculate spending by category
+        const categorySpending = {};
+        monthExpenses.forEach(expense => {
+            categorySpending[expense.category] = (categorySpending[expense.category] || 0) + expense.amount;
+        });
+
+        // Clear previous alerts
+        this.budgetAlerts = [];
+
+        // Update each category budget display
+        const categoryBudgetItems = document.querySelectorAll('.category-budget-item');
+        categoryBudgetItems.forEach(item => {
+            const category = item.dataset.category;
+            const budget = this.budget.categories[category] || 0;
+            const spent = categorySpending[category] || 0;
+            
+            // Check for alerts
+            if (budget > 0) {
+                const percentage = (spent / budget * 100);
+                
+                if (percentage >= 100) {
+                    this.budgetAlerts.push({
+                        category: category,
+                        type: 'exceeded',
+                        spent: spent,
+                        budget: budget,
+                        percentage: percentage
+                    });
+                } else if (percentage >= 90) {
+                    this.budgetAlerts.push({
+                        category: category,
+                        type: 'warning',
+                        spent: spent,
+                        budget: budget,
+                        percentage: percentage
+                    });
+                }
+            }
+            
+            // Update progress bar
+            const progressBar = item.querySelector('.progress-fill[data-category="' + category + '"]');
+            const spentDisplay = item.querySelector('.budget-spent');
+            
+            if (progressBar && spentDisplay) {
+                const percentage = budget > 0 ? Math.min((spent / budget * 100), 100) : 0;
+                progressBar.style.width = percentage + '%';
+                
+                // Color coding based on spending
+                if (percentage >= 100) {
+                    progressBar.style.backgroundColor = '#dc3545';
+                    item.classList.add('budget-exceeded');
+                } else if (percentage >= 90) {
+                    progressBar.style.backgroundColor = '#ffc107';
+                    item.classList.add('budget-warning');
+                } else {
+                    progressBar.style.backgroundColor = '#28a745';
+                    item.classList.remove('budget-exceeded', 'budget-warning');
+                }
+                
+                spentDisplay.textContent = `₹${spent.toFixed(0)}/₹${budget.toFixed(0)}`;
+            }
+        });
+
+        // Update notification bell
+        this.updateNotificationBell();
+    }
+
+    checkBudgetAlert(category, newAmount) {
+        const currentMonth = this.currentDate.getMonth();
+        const currentYear = this.currentDate.getFullYear();
+
+        // Get current spending for the category
+        const monthExpenses = this.expenses.filter(expense => {
+            const expenseDate = new Date(expense.date);
+            return expenseDate.getMonth() === currentMonth && 
+                   expenseDate.getFullYear() === currentYear &&
+                   expense.category === category;
+        });
+
+        const currentSpent = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        const totalAfterNew = currentSpent + newAmount;
+        
+        // Check category budget
+        const categoryBudget = this.budget.categories[category] || 0;
+        if (categoryBudget > 0) {
+            const percentage = (totalAfterNew / categoryBudget * 100);
+            const alertKey = `${category}-${currentMonth}-${currentYear}`;
+            
+            if (percentage >= 100 && !this.dismissedAlerts.includes(alertKey + '-exceeded')) {
+                this.showBudgetAlert(category, 'exceeded', totalAfterNew, categoryBudget);
+                this.dismissedAlerts.push(alertKey + '-exceeded');
+                localStorage.setItem('dismissedBudgetAlerts', JSON.stringify(this.dismissedAlerts));
+            } else if (percentage >= 90 && percentage < 100 && !this.dismissedAlerts.includes(alertKey + '-warning')) {
+                this.showBudgetAlert(category, 'warning', totalAfterNew, categoryBudget);
+                this.dismissedAlerts.push(alertKey + '-warning');
+                localStorage.setItem('dismissedBudgetAlerts', JSON.stringify(this.dismissedAlerts));
+            }
+        }
+
+        // Check monthly budget
+        const allMonthExpenses = this.expenses.filter(expense => {
+            const expenseDate = new Date(expense.date);
+            return expenseDate.getMonth() === currentMonth && 
+                   expenseDate.getFullYear() === currentYear;
+        });
+
+        const monthlySpent = allMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0) + newAmount;
+        if (this.budget.monthly > 0) {
+            const monthlyPercentage = (monthlySpent / this.budget.monthly * 100);
+            const monthlyAlertKey = `monthly-${currentMonth}-${currentYear}`;
+            
+            if (monthlyPercentage >= 100 && !this.dismissedAlerts.includes(monthlyAlertKey + '-exceeded')) {
+                this.showBudgetAlert('Monthly Total', 'exceeded', monthlySpent, this.budget.monthly);
+                this.dismissedAlerts.push(monthlyAlertKey + '-exceeded');
+                localStorage.setItem('dismissedBudgetAlerts', JSON.stringify(this.dismissedAlerts));
+            } else if (monthlyPercentage >= 90 && monthlyPercentage < 100 && !this.dismissedAlerts.includes(monthlyAlertKey + '-warning')) {
+                this.showBudgetAlert('Monthly Total', 'warning', monthlySpent, this.budget.monthly);
+                this.dismissedAlerts.push(monthlyAlertKey + '-warning');
+                localStorage.setItem('dismissedBudgetAlerts', JSON.stringify(this.dismissedAlerts));
+            }
+        }
+    }
+
+    showBudgetAlert(category, type, spent, budget) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `budget-alert ${type}`;
+        alertDiv.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: ${type === 'exceeded' ? '#dc3545' : '#ffc107'};
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            max-width: 350px;
+            animation: slideInRight 0.3s ease;
+        `;
+
+        const icon = type === 'exceeded' ? '⚠️' : '⏰';
+        const message = type === 'exceeded' 
+            ? `Budget Exceeded for ${category}!`
+            : `90% Budget Warning for ${category}`;
+
+        alertDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">${icon}</span>
+                <div>
+                    <div style="font-weight: bold; margin-bottom: 5px;">${message}</div>
+                    <div style="font-size: 14px;">
+                        Spent: ₹${spent.toFixed(0)} / Budget: ₹${budget.toFixed(0)}
+                    </div>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" 
+                        style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0; margin-left: auto;">
+                    ×
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(alertDiv);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(alertDiv)) {
+                alertDiv.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => alertDiv.remove(), 300);
+            }
+        }, 5000);
+    }
+
+    updateNotificationBell() {
+        const bellBtn = document.getElementById('budget-bell-btn');
+        const bellBadge = document.getElementById('budget-bell-badge');
+        
+        if (bellBtn && bellBadge) {
+            const alertCount = this.budgetAlerts.length;
+            if (alertCount > 0) {
+                bellBtn.classList.add('has-alerts');
+                bellBadge.textContent = alertCount;
+                bellBadge.style.display = 'block';
+            } else {
+                bellBtn.classList.remove('has-alerts');
+                bellBadge.style.display = 'none';
+            }
+        }
+    }
+
+    closeBudgetModal() {
+        const modal = document.querySelector('.budget-summary-modal');
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (modal) modal.remove();
+        if (backdrop) backdrop.remove();
+    }
+
+    // Voice command support
+    addExpenseProgrammatically(amount, description) {
+        const expense = {
+            id: Date.now(),
+            amount: amount,
+            category: this.categorizeExpense(description),
+            description: description,
+            date: new Date().toISOString().split('T')[0]
+        };
+        
+        this.expenses.push(expense);
+        this.saveExpenses();
+        this.renderExpenses();
+        this.updateBudgetStatus();
+        
+        // Update streak
+        if (window.streakManager) {
+            window.streakManager.updateStreak('expenseTracking');
+        }
+    }
+
+    categorizeExpense(description) {
+        const keywords = {
+            'Food': ['food', 'lunch', 'dinner', 'breakfast', 'snack', 'restaurant', 'eat', 'meal', 'coffee', 'tea'],
+            'Transport': ['uber', 'taxi', 'bus', 'train', 'metro', 'fuel', 'petrol', 'transport', 'travel'],
+            'Shopping': ['shop', 'buy', 'purchase', 'store', 'mall', 'clothes', 'shoes'],
+            'Entertainment': ['movie', 'cinema', 'game', 'party', 'entertainment', 'fun'],
+            'Healthcare': ['doctor', 'medicine', 'hospital', 'medical', 'health', 'pharmacy'],
+            'Bills': ['bill', 'electricity', 'water', 'internet', 'phone', 'rent', 'utility']
+        };
+        
+        const desc = description.toLowerCase();
+        for (const [category, keywordList] of Object.entries(keywords)) {
+            if (keywordList.some(keyword => desc.includes(keyword))) {
+                return category;
+            }
+        }
+        
+        return 'Other';
+    }
+
+    showBudgetSummary() {
+        if (this.budgetAlerts.length === 0) {
+            this.showMessage('All budgets are under control! ✅', 'success');
+            return;
+        }
+
+        // Remove any existing modal first
+        this.closeBudgetModal();
+
+        const modal = document.createElement('div');
+        modal.className = 'budget-summary-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 10001;
+            max-width: 450px;
+            width: 90%;
+            max-height: 70vh;
+            overflow-y: auto;
+        `;
+
+        const alertsHtml = this.budgetAlerts.map(alert => {
+            const icon = alert.type === 'exceeded' ? '🚨' : '⚠️';
+            const color = alert.type === 'exceeded' ? '#dc3545' : '#ffc107';
+            return `
+                <div style="padding: 12px; margin-bottom: 10px; background: ${color}15; border-left: 4px solid ${color}; border-radius: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 20px;">${icon}</span>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #333;">${alert.category}</div>
+                            <div style="font-size: 14px; color: #666; margin-top: 4px;">
+                                Spent: ₹${alert.spent.toFixed(0)} / Budget: ₹${alert.budget.toFixed(0)} (${alert.percentage.toFixed(0)}%)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        modal.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #333;">Budget Alerts 🔔</h3>
+                <button onclick="window.expenseManager.closeBudgetModal()" 
+                        style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">
+                    ×
+                </button>
+            </div>
+            <div style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                You have ${this.budgetAlerts.length} budget alert${this.budgetAlerts.length > 1 ? 's' : ''}:
+            </div>
+            ${alertsHtml}
+            <button onclick="window.expenseManager.closeBudgetModal()" 
+                    style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px;">
+                Got it!
+            </button>
+        `;
+
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+        `;
+        backdrop.onclick = () => this.closeBudgetModal();
+
+        document.body.appendChild(backdrop);
+        document.body.appendChild(modal);
+    }
+
     loadBudget() {
         const stored = localStorage.getItem('expenseBudget');
         if (stored) {
@@ -412,6 +790,19 @@ class ExpenseManager {
                 const budgetInput = document.getElementById('monthly-budget');
                 if (budgetInput && this.budget.monthly) {
                     budgetInput.value = this.budget.monthly;
+                }
+                
+                // Load category budgets
+                if (this.budget.categories) {
+                    Object.entries(this.budget.categories).forEach(([category, amount]) => {
+                        const item = document.querySelector(`.category-budget-item[data-category="${category}"]`);
+                        if (item) {
+                            const input = item.querySelector('.category-budget-input');
+                            if (input) {
+                                input.value = amount;
+                            }
+                        }
+                    });
                 }
             } catch (e) {
                 console.error('Error loading budget:', e);

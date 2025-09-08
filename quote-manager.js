@@ -124,6 +124,9 @@ class QuoteManager {
         
         if (quoteText && quoteAuthor) {
             if (quote && quote.quote) {
+                // Set current quote for copying functionality
+                this.currentQuote = quote;
+                
                 // Fade out effect
                 quoteText.style.opacity = '0';
                 quoteAuthor.style.opacity = '0';
@@ -142,9 +145,15 @@ class QuoteManager {
                     this.updateFavoriteButton();
                 }, 300);
             } else {
-                // Display default if no quote
-                quoteText.textContent = "Every day is a new beginning. Take a deep breath and start again.";
-                quoteAuthor.textContent = "Unknown";
+                // Display default if no quote - also set currentQuote
+                const defaultQuote = {
+                    quote: "Every day is a new beginning. Take a deep breath and start again.",
+                    author: "Unknown"
+                };
+                this.currentQuote = defaultQuote;
+                
+                quoteText.textContent = defaultQuote.quote;
+                quoteAuthor.textContent = defaultQuote.author;
                 quoteText.style.opacity = '1';
                 quoteAuthor.style.opacity = '1';
             }
@@ -153,6 +162,26 @@ class QuoteManager {
 
     displayFallbackQuote() {
         const fallbackQuotes = [
+            // Deepanshu Quotes - Priority
+            { quote: "Mann mai kuch bhar ke jiyoge, Toh mann bhar ke kaise jiyoge.", author: "Deepanshu" },
+            { quote: "Aukaat pata karne ke liye bhi aukaat ke bahar jana padta hai jaani.", author: "Deepanshu" },
+            { quote: "You need to be liked is the surest sign of weakness.", author: "Deepanshu" },
+            { quote: "You want to lead the orchestra, learn to turn your back to the crowd.", author: "Deepanshu" },
+            
+            // Powerful Life Quotes
+            { quote: "Aerodynamically, a bee's body is not made to fly; the good thing is that the bee doesn't know.", author: "" },
+            { quote: "Aaja maa tujhe shopping karau, Tu fikar nahi kar paisa toh pani hai.", author: "" },
+            { quote: "The harder you work, the luckier you get.", author: "" },
+            { quote: "A man who fears pain more than failure will taste both.", author: "" },
+            { quote: "You can't have your achievements without disrupting your peace.", author: "" },
+            { quote: "Maybe you don't see the constant progress because you are continuously raising the bar higher.", author: "" },
+            { quote: "Let the young man in his desperation go out to hunt, If he kills an elephant, his poverty ends. If elephant kills him, his poverty ends.", author: "" },
+            { quote: "If you don't sacrifice for what you want, what you want is gonna be the sacrifice.", author: "" },
+            { quote: "Embarrassment is an under explored emotion. Go out and make a fool of yourself.", author: "" },
+            { quote: "Of all the days you fail, remember you just need one of them to succeed & everything will shift.", author: "" },
+            { quote: "Ego is necessary.", author: "" },
+            { quote: "What you are not changing is what you're choosing.", author: "" },
+            
             // Iconic Movie Quotes - The Most Powerful & Life-Changing
             { quote: "Do or do not. There is no try.", author: "Yoda, Star Wars" },
             { quote: "In every job that must be done, there is an element of fun.", author: "Mary Poppins" },
@@ -288,9 +317,26 @@ class QuoteManager {
         let quoteQueue = JSON.parse(localStorage.getItem('quoteQueue') || '[]');
         
         if (quoteQueue.length === 0) {
-            // Create new shuffled queue when all quotes have been shown
-            quoteQueue = shuffleArray(fallbackQuotes);
-            console.log('Created new shuffled quote queue with', quoteQueue.length, 'quotes');
+            // Prioritize Deepanshu quotes - 40% chance
+            const deepanshuQuotes = fallbackQuotes.filter(q => q.author === 'Deepanshu');
+            const otherQuotes = fallbackQuotes.filter(q => q.author !== 'Deepanshu');
+            
+            // Create weighted queue
+            const weightedQueue = [];
+            
+            // Add each Deepanshu quote multiple times for higher probability
+            deepanshuQuotes.forEach(quote => {
+                for (let i = 0; i < 3; i++) {
+                    weightedQueue.push(quote);
+                }
+            });
+            
+            // Add other quotes once
+            weightedQueue.push(...otherQuotes);
+            
+            // Shuffle the weighted queue
+            quoteQueue = shuffleArray(weightedQueue);
+            console.log('Created new shuffled quote queue with', quoteQueue.length, 'quotes (Deepanshu quotes prioritized)');
         }
         
         // Get next quote from queue
@@ -448,26 +494,47 @@ class QuoteManager {
         }
     }
     
-    copyQuote() {
-        if (!this.currentQuote) return;
+    async copyQuote() {
+        if (!this.currentQuote) {
+            this.showNotification('No quote to copy!');
+            return;
+        }
         
         const text = `"${this.currentQuote.quote}" — ${this.currentQuote.author || 'Unknown'}`;
         
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(() => {
+        try {
+            // Try modern clipboard API first
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
                 this.showNotification('Quote copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-            });
-        } else {
-            // Fallback for older browsers
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            this.showNotification('Quote copied to clipboard!');
+            } else {
+                // Fallback for older browsers or non-secure contexts
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-999999px';
+                textarea.style.top = '-999999px';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        this.showNotification('Quote copied to clipboard!');
+                    } else {
+                        this.showNotification('Failed to copy quote');
+                    }
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                    this.showNotification('Failed to copy quote');
+                }
+                
+                document.body.removeChild(textarea);
+            }
+        } catch (err) {
+            console.error('Copy failed:', err);
+            this.showNotification('Failed to copy quote. Please try selecting and copying manually.');
         }
     }
     

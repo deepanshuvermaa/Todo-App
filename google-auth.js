@@ -315,34 +315,11 @@ class ModernGoogleAuth {
                 
                 if (response.result) {
                     // Successfully accessed the sheet
-                    const sheetUrl = `https://docs.google.com/spreadsheets/d/${storedSheetId}`;
-                    
-                    // Store in both user-specific and general keys
-                    localStorage.setItem(userSheetKey, storedSheetId);
-                    localStorage.setItem('userSheetId', storedSheetId);
-                    localStorage.setItem('userSheetUrl', sheetUrl);
-                    
-                    // Update UI
-                    if (document.getElementById('sheet-id')) {
-                        document.getElementById('sheet-id').value = storedSheetId;
-                    }
-                    
-                    // Update app state
-                    window.todoApp.sheetId = storedSheetId;
-                    window.todoApp.isAuthenticated = true;
-                    
-                    // Show View Sheet button
-                    const viewSheetBtn = document.getElementById('view-sheet-btn');
-                    if (viewSheetBtn) {
-                        viewSheetBtn.style.display = 'inline-flex';
-                        viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
-                    }
-                    
-                    this.showMessage(`Connected to your sheet for ${userEmail}`, 'success');
+                    await this.connectToSheet(storedSheetId, response.result.properties.title);
                     return;
                 }
             } catch (error) {
-                console.log('Could not access stored sheet, will create new one...');
+                console.log('Could not access stored sheet, searching for existing sheets...');
                 // Clear invalid sheet ID
                 localStorage.removeItem(userSheetKey);
                 localStorage.removeItem('userSheetId');
@@ -350,9 +327,82 @@ class ModernGoogleAuth {
             }
         }
         
-        // No valid stored sheet found - create a new one
-        console.log(`Creating new sheet for ${userEmail}...`);
+        // Try to search for existing sheets using Drive API (if available)
+        await this.searchForExistingSheets(userEmail);
+    }
+    
+    async searchForExistingSheets(userEmail) {
+        console.log(`Searching for existing sheets for ${userEmail}...`);
+        
+        try {
+            // Try to load Drive API and search for sheets
+            await gapi.client.load('drive', 'v3');
+            
+            const searchResponse = await gapi.client.drive.files.list({
+                q: "name contains 'lifeTracker' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+                fields: 'files(id, name, createdTime)',
+                orderBy: 'createdTime',
+                pageSize: 10
+            });
+            
+            if (searchResponse.result.files && searchResponse.result.files.length > 0) {
+                console.log(`Found ${searchResponse.result.files.length} existing sheet(s)`);
+                
+                // Try to access each sheet until we find one that works
+                for (const file of searchResponse.result.files) {
+                    try {
+                        const sheetResponse = await gapi.client.sheets.spreadsheets.get({
+                            spreadsheetId: file.id
+                        });
+                        
+                        if (sheetResponse.result) {
+                            console.log(`Connecting to existing sheet: ${file.name}`);
+                            await this.connectToSheet(file.id, file.name);
+                            return;
+                        }
+                    } catch (err) {
+                        console.log(`Could not access sheet ${file.id}, trying next...`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Drive API not available or search failed:', error);
+        }
+        
+        // No existing sheets found or accessible - create new one
+        console.log(`No existing sheets found. Creating new sheet for ${userEmail}...`);
         await this.createUserSheet();
+    }
+    
+    async connectToSheet(sheetId, sheetName) {
+        const userEmail = this.currentUser?.email || localStorage.getItem('userEmail');
+        const userSheetKey = userEmail ? `sheet_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : 'userSheetId';
+        const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}`;
+        
+        // Store sheet info
+        localStorage.setItem(userSheetKey, sheetId);
+        localStorage.setItem('userSheetId', sheetId);
+        localStorage.setItem('userSheetUrl', sheetUrl);
+        
+        // Update UI
+        if (document.getElementById('sheet-id')) {
+            document.getElementById('sheet-id').value = sheetId;
+        }
+        
+        // Update app state
+        if (window.todoApp) {
+            window.todoApp.sheetId = sheetId;
+            window.todoApp.isAuthenticated = true;
+        }
+        
+        // Show View Sheet button
+        const viewSheetBtn = document.getElementById('view-sheet-btn');
+        if (viewSheetBtn) {
+            viewSheetBtn.style.display = 'inline-flex';
+            viewSheetBtn.onclick = () => window.open(sheetUrl, '_blank');
+        }
+        
+        this.showMessage(`Connected to: ${sheetName}`, 'success');
     }
 
     async verifyStoredSheet(sheetId) {

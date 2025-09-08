@@ -108,12 +108,106 @@ class TodoApp {
     }
 
     switchTab(tabName) {
+        // Update nav tabs
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.classList.toggle('active', tab.dataset.tab === tabName);
         });
+        
+        // Update views
         document.querySelectorAll('.view').forEach(view => {
             view.classList.toggle('active', view.id === `${tabName}-view`);
         });
+        
+        // Handle special cases for new tabs
+        if (tabName === 'dashboard') {
+            // Initialize dashboard when switching to it
+            if (window.smartDashboard) {
+                window.smartDashboard.loadDashboardData();
+            }
+        } else if (tabName === 'habits') {
+            // Update habits view when switching to it
+            if (window.habitTracker) {
+                window.habitTracker.updateUI();
+            }
+        }
+        
+        // Close mobile menu if open
+        const navTabs = document.querySelector('.nav-tabs');
+        const hamburger = document.querySelector('.hamburger-menu');
+        if (navTabs && navTabs.classList.contains('mobile-open')) {
+            navTabs.classList.remove('mobile-open');
+            if (hamburger) {
+                hamburger.classList.remove('active');
+            }
+        }
+    }
+    
+    // Alias for voice commands
+    switchToTab(tabName) {
+        this.switchTab(tabName);
+    }
+    
+    toggleMobileMenu() {
+        const navTabs = document.querySelector('.nav-tabs');
+        const hamburger = document.querySelector('.hamburger-menu');
+        let overlay = document.querySelector('.mobile-menu-overlay');
+        
+        if (navTabs) {
+            navTabs.classList.toggle('mobile-open');
+            
+            // Add/remove overlay
+            if (navTabs.classList.contains('mobile-open')) {
+                // Create overlay if it doesn't exist
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.className = 'mobile-menu-overlay';
+                    overlay.onclick = () => this.toggleMobileMenu();
+                    document.body.appendChild(overlay);
+                }
+                // Add active class with slight delay for animation
+                setTimeout(() => {
+                    overlay.classList.add('active');
+                }, 10);
+            } else {
+                // Remove overlay
+                if (overlay) {
+                    overlay.classList.remove('active');
+                    setTimeout(() => {
+                        overlay.remove();
+                    }, 300);
+                }
+            }
+        }
+        
+        if (hamburger) {
+            hamburger.classList.toggle('active');
+        }
+    }
+
+    // Voice command support
+    addTaskProgrammatically(taskText) {
+        const task = {
+            id: Date.now(),
+            text: taskText,
+            completed: false,
+            date: this.currentDate.toDateString(),
+            createdAt: new Date().toISOString()
+        };
+        
+        this.tasks.push(task);
+        this.saveTasks();
+        this.renderTasks();
+        this.updateMetrics();
+        
+        // Update streak
+        if (window.streakManager) {
+            window.streakManager.updateStreak('taskCompletion');
+        }
+        
+        // Sync to sheets if connected
+        if (this.isAuthenticated && this.sheetId) {
+            this.syncToSheets();
+        }
     }
 
     updateDateDisplay() {
@@ -410,23 +504,46 @@ class TodoApp {
         }
     }
     
-    copySheetId() {
+    async copySheetId() {
         const sheetId = document.getElementById('sheet-id').value;
-        if (sheetId) {
-            navigator.clipboard.writeText(sheetId).then(() => {
+        if (!sheetId) {
+            this.showMessage('No Sheet ID to copy!', 'error');
+            return;
+        }
+        
+        try {
+            // Try modern clipboard API first
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(sheetId);
                 this.showMessage('Sheet ID copied to clipboard!', 'success');
-            }).catch(() => {
-                // Fallback for older browsers
+            } else {
+                // Fallback for older browsers or non-secure contexts
                 const input = document.createElement('input');
                 input.value = sheetId;
+                input.style.position = 'fixed';
+                input.style.left = '-999999px';
+                input.style.top = '-999999px';
                 document.body.appendChild(input);
+                input.focus();
                 input.select();
-                document.execCommand('copy');
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        this.showMessage('Sheet ID copied to clipboard!', 'success');
+                    } else {
+                        this.showMessage('Failed to copy Sheet ID', 'error');
+                    }
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                    this.showMessage('Failed to copy Sheet ID', 'error');
+                }
+                
                 document.body.removeChild(input);
-                this.showMessage('Sheet ID copied to clipboard!', 'success');
-            });
-        } else {
-            this.showMessage('No Sheet ID to copy', 'error');
+            }
+        } catch (err) {
+            console.error('Copy failed:', err);
+            this.showMessage('Failed to copy. Please try selecting and copying manually.', 'error');
         }
     }
     
@@ -537,24 +654,24 @@ class TodoApp {
             const rowIndex = dates.findIndex(row => row[0] === todayStr);
 
             if (rowIndex > -1) {
-                // Update existing row
+                // Update existing row - Column C stays empty for current day
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: this.sheetId,
-                    range: `Sheet1!A${rowIndex + 1}:C${rowIndex + 1}`,
+                    range: `Sheet1!A${rowIndex + 1}:B${rowIndex + 1}`,
                     valueInputOption: 'USER_ENTERED',
                     resource: {
-                        values: [[todayStr, todoTasks, '']]
+                        values: [[todayStr, todoTasks || 'No tasks']]
                     }
                 });
             } else {
-                // Append new row
+                // Append new row - Column C empty for current day
                 await gapi.client.sheets.spreadsheets.values.append({
                     spreadsheetId: this.sheetId,
                     range: 'Sheet1!A:C',
                     valueInputOption: 'USER_ENTERED',
                     insertDataOption: 'INSERT_ROWS',
                     resource: {
-                        values: [[todayStr, todoTasks, '']]
+                        values: [[todayStr, todoTasks || 'No tasks', '']]
                     }
                 });
             }
@@ -629,54 +746,136 @@ class TodoApp {
         // Check for rollover on app start
         this.checkAndPerformRollover();
         
-        // Set up interval to check every hour
+        // Set up interval to check every minute (for midnight detection)
         setInterval(() => {
             this.checkAndPerformRollover();
-        }, 3600000); // Check every hour
+        }, 60000); // Check every minute
     }
 
     checkAndPerformRollover() {
         const now = new Date();
-        const lastRollover = localStorage.getItem('lastRolloverDate');
+        const lastProcessedDate = localStorage.getItem('lastProcessedDate');
         const todayStr = now.toISOString().split('T')[0];
         
-        if (lastRollover !== todayStr) {
-            // It's a new day, perform rollover
-            this.performRollover();
-            localStorage.setItem('lastRolloverDate', todayStr);
+        // If it's a new day or first time running
+        if (!lastProcessedDate || lastProcessedDate !== todayStr) {
+            console.log(`Date changed from ${lastProcessedDate} to ${todayStr}. Performing rollover...`);
+            this.performRollover(lastProcessedDate, todayStr);
+            localStorage.setItem('lastProcessedDate', todayStr);
+            this.currentDate = now; // Update current date
+            this.updateDateDisplay();
         }
     }
 
-    async performRollover() {
-        const yesterday = new Date(this.currentDate);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+    async performRollover(previousDateStr, newDateStr) {
+        if (!previousDateStr) {
+            // First time running, no rollover needed
+            return;
+        }
 
-        const yesterdayTasks = this.tasks.filter(task => 
-            task.date === yesterdayStr && !task.completed
-        );
+        // Get all tasks from the previous date
+        const previousTasks = this.tasks.filter(task => task.date === previousDateStr);
+        const incompleteTasks = previousTasks.filter(task => !task.completed);
+        const completedTasks = previousTasks.filter(task => task.completed);
 
-        if (yesterdayTasks.length > 0) {
-            const todayStr = this.currentDate.toISOString().split('T')[0];
+        // First, update the previous day's row in Google Sheets if authenticated
+        if (this.isAuthenticated && this.sheetId) {
+            await this.updatePreviousDayInSheets(previousDateStr, completedTasks, incompleteTasks);
+        }
+
+        // Roll over incomplete tasks to today
+        if (incompleteTasks.length > 0) {
+            console.log(`Rolling over ${incompleteTasks.length} incomplete tasks to ${newDateStr}`);
             
-            yesterdayTasks.forEach(task => {
-                const newTask = {
-                    ...task,
-                    id: Date.now() + Math.random(),
-                    date: todayStr,
-                    rolledOver: true
-                };
-                this.tasks.push(newTask);
+            // Create new tasks for today
+            incompleteTasks.forEach(task => {
+                // Check if task already exists for today (prevent duplicates)
+                const existingTask = this.tasks.find(t => 
+                    t.date === newDateStr && 
+                    t.text === task.text
+                );
+                
+                if (!existingTask) {
+                    const newTask = {
+                        ...task,
+                        id: Date.now() + Math.random(),
+                        date: newDateStr,
+                        completed: false,
+                        rolledOver: true
+                    };
+                    this.tasks.push(newTask);
+                }
             });
 
             this.saveTasks();
             this.renderTasks();
             this.updateMetrics();
             
+            // Sync new day's tasks to sheets
             if (this.isAuthenticated && this.sheetId) {
-                this.syncToSheets();
+                await this.syncToSheets();
             }
         }
+    }
+
+    async updatePreviousDayInSheets(dateStr, completedTasks, incompleteTasks) {
+        if (!this.isAuthenticated || !this.sheetId) return;
+
+        try {
+            // Format completed tasks for column B
+            const completedTasksStr = completedTasks.map((task, index) => {
+                return `${index + 1}- ${task.text} - done`;
+            }).join('\n');
+
+            // Format incomplete tasks for column C
+            const incompleteTasksStr = incompleteTasks.map((task, index) => {
+                return `${index + 1}- ${task.text}`;
+            }).join('\n');
+
+            // Find the row for the previous date
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: this.sheetId,
+                range: 'Sheet1!A:A'
+            });
+
+            const dates = response.result.values || [];
+            const rowIndex = dates.findIndex(row => row[0] === dateStr);
+
+            if (rowIndex > -1) {
+                // Update the existing row with completed tasks in B and incomplete in C
+                await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: this.sheetId,
+                    range: `Sheet1!A${rowIndex + 1}:C${rowIndex + 1}`,
+                    valueInputOption: 'USER_ENTERED',
+                    resource: {
+                        values: [[dateStr, completedTasksStr || 'No tasks completed', incompleteTasksStr || 'All tasks completed']]
+                    }
+                });
+                console.log(`Updated ${dateStr} row: ${completedTasks.length} completed, ${incompleteTasks.length} incomplete`);
+            }
+        } catch (error) {
+            console.error('Error updating previous day in sheets:', error);
+        }
+    }
+
+    async manualRollover() {
+        console.log('Manual rollover triggered');
+        
+        // Get yesterday's date
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        
+        // Get today's date
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        // Force rollover from yesterday to today
+        await this.performRollover(yesterdayStr, todayStr);
+        
+        // Update the last processed date
+        localStorage.setItem('lastProcessedDate', todayStr);
+        
+        this.showMessage('Task rollover completed! Check your Google Sheet.', 'success');
     }
 
     showMessage(message, type) {

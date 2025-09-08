@@ -110,10 +110,14 @@
                 </button>
             </div>
             <nav class="nav-tabs">
-                <button class="nav-tab active" data-tab="today">TODAY</button>
+                <button class="nav-tab active" data-tab="dashboard">DASHBOARD</button>
+                <button class="nav-tab" data-tab="today">TODAY</button>
                 <button class="nav-tab" data-tab="expenses">EXPENSES</button>
-                <button class="nav-tab" data-tab="bucket-list">BUCKET LIST</button>
+                <button class="nav-tab" data-tab="meals">MEALS</button>
+                <button class="nav-tab" data-tab="habits">HABITS</button>
                 <button class="nav-tab" data-tab="notes">NOTES</button>
+                <button class="nav-tab" data-tab="reminders">CALL REMINDERS</button>
+                <button class="nav-tab" data-tab="bucket-list">BUCKET LIST</button>
                 <button class="nav-tab" data-tab="history">HISTORY</button>
                 <button class="nav-tab" data-tab="settings">SETTINGS</button>
                 <button class="nav-tab" data-tab="about">ABOUT</button>
@@ -163,7 +167,11 @@
                 </div>
             </div>
             
-            <div id="today-view" class="view active">
+            <div id="dashboard-view" class="view active">
+                <!-- Dashboard will be inserted here by smart-dashboard.js -->
+            </div>
+            
+            <div id="today-view" class="view">
                 <div class="task-input-section">
                     <input type="text" 
                            id="task-input" 
@@ -228,7 +236,14 @@
                 <div class="expense-container">
                     <!-- Quick Add Section -->
                     <div class="expense-quick-add">
-                        <h2 class="section-title">ADD EXPENSE</h2>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h2 class="section-title">ADD EXPENSE</h2>
+                            <!-- Budget Alert Bell -->
+                            <button id="budget-bell-btn" class="budget-bell-btn" onclick="window.expenseManager?.showBudgetSummary()">
+                                🔔
+                                <span id="budget-bell-badge" class="bell-badge" style="display: none;">0</span>
+                            </button>
+                        </div>
                         <div class="expense-input-section">
                             <div class="expense-form">
                                 <input type="number" 
@@ -318,21 +333,132 @@
                             </div>
 
                             <!-- Budget Tracking -->
-                            <div class="analytics-card">
-                                <h3 class="analytics-title">BUDGET STATUS</h3>
+                            <div class="analytics-card budget-card">
+                                <h3 class="analytics-title">BUDGET MANAGEMENT</h3>
                                 <div class="budget-container">
-                                    <div class="budget-input-group">
-                                        <label>Monthly Budget:</label>
-                                        <input type="number" 
-                                               id="monthly-budget" 
-                                               class="budget-input" 
-                                               placeholder="Set budget..."
-                                               min="0">
-                                        <button id="save-budget-btn" class="btn-secondary">SET</button>
+                                    <!-- Monthly Total Budget -->
+                                    <div class="budget-section">
+                                        <h4 class="budget-subtitle">Monthly Total</h4>
+                                        <div class="budget-input-group">
+                                            <input type="number" 
+                                                   id="monthly-budget" 
+                                                   class="budget-input" 
+                                                   placeholder="Total budget..."
+                                                   min="0">
+                                            <button id="save-budget-btn" class="btn-secondary">SET</button>
+                                        </div>
+                                        <div id="budget-status" class="budget-status"></div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill budget-progress" id="budget-bar"></div>
+                                        </div>
                                     </div>
-                                    <div id="budget-status" class="budget-status"></div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill budget-progress" id="budget-bar"></div>
+                                    
+                                    <!-- Category Budgets -->
+                                    <div class="budget-section">
+                                        <h4 class="budget-subtitle">Category Budgets</h4>
+                                        <button id="toggle-category-budgets" class="btn-secondary">Setup Categories</button>
+                                        <div id="category-budgets" class="category-budgets" style="display: none;">
+                                            <div class="category-budget-item" data-category="Food">
+                                                <span class="budget-category-icon">🍔</span>
+                                                <span class="budget-category-name">Food</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Food"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Transport">
+                                                <span class="budget-category-icon">🚗</span>
+                                                <span class="budget-category-name">Transport</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Transport"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Shopping">
+                                                <span class="budget-category-icon">🛍️</span>
+                                                <span class="budget-category-name">Shopping</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Shopping"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Entertainment">
+                                                <span class="budget-category-icon">🎬</span>
+                                                <span class="budget-category-name">Entertainment</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Entertainment"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Bills">
+                                                <span class="budget-category-icon">📄</span>
+                                                <span class="budget-category-name">Bills</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Bills"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Health">
+                                                <span class="budget-category-icon">💊</span>
+                                                <span class="budget-category-name">Health</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Health"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Education">
+                                                <span class="budget-category-icon">📚</span>
+                                                <span class="budget-category-name">Education</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Education"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Business">
+                                                <span class="budget-category-icon">💼</span>
+                                                <span class="budget-category-name">Business</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Business"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <div class="category-budget-item" data-category="Other">
+                                                <span class="budget-category-icon">📌</span>
+                                                <span class="budget-category-name">Other</span>
+                                                <input type="number" class="category-budget-input" placeholder="Budget" min="0">
+                                                <div class="category-budget-progress">
+                                                    <div class="progress-bar small">
+                                                        <div class="progress-fill" data-category="Other"></div>
+                                                    </div>
+                                                    <span class="budget-spent">₹0/₹0</span>
+                                                </div>
+                                            </div>
+                                            <button id="save-category-budgets" class="btn-primary">Save All Category Budgets</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -343,6 +469,398 @@
                     <div class="expense-chart-section">
                         <h2 class="section-title">SPENDING BY CATEGORY</h2>
                         <div id="category-chart" class="category-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="meals-view" class="view">
+                <div class="meals-container">
+                    <!-- User Profile Section -->
+                    <div class="user-health-profile">
+                        <h2 class="section-title">HEALTH PROFILE</h2>
+                        <div class="profile-setup" id="profile-setup">
+                            <div class="profile-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Goal:</label>
+                                        <select id="fitness-goal" class="profile-input">
+                                            <option value="">Select Goal</option>
+                                            <option value="maintain">Stay Fit (Maintain)</option>
+                                            <option value="lose">Get Slim (Lose Weight)</option>
+                                            <option value="gain">Get Bulky (Gain Muscle)</option>
+                                            <option value="healthy">Eat Healthy</option>
+                                            <option value="athletic">Athletic Performance</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Weight (kg):</label>
+                                        <input type="number" id="user-weight" class="profile-input" placeholder="70" step="0.1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Height (cm):</label>
+                                        <input type="number" id="user-height" class="profile-input" placeholder="170">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Age:</label>
+                                        <input type="number" id="user-age" class="profile-input" placeholder="25">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Gender:</label>
+                                        <select id="user-gender" class="profile-input">
+                                            <option value="">Select</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+                                    <button id="save-profile-btn" class="btn-primary">SAVE PROFILE</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Add Meal Section -->
+                    <div class="meal-quick-add">
+                        <h2 class="section-title">ADD MEAL</h2>
+                        <div class="meal-type-selector">
+                            <button class="meal-type-btn active" data-meal="breakfast">Breakfast</button>
+                            <button class="meal-type-btn" data-meal="lunch">Lunch</button>
+                            <button class="meal-type-btn" data-meal="snack">Snack</button>
+                            <button class="meal-type-btn" data-meal="dinner">Dinner</button>
+                        </div>
+                        
+                        <div class="meal-input-section">
+                            <div class="meal-form">
+                                <input type="text" id="food-item" class="meal-input" placeholder="What did you eat? (e.g., Rice, Dal, Chicken)">
+                                <div class="quantity-group">
+                                    <input type="number" id="food-quantity" class="meal-input quantity-input" placeholder="Quantity" step="1" min="1">
+                                    <select id="food-unit" class="meal-input unit-select">
+                                        <option value="piece">Piece</option>
+                                        <option value="bowl">Bowl</option>
+                                        <option value="plate">Plate</option>
+                                        <option value="cup">Cup</option>
+                                        <option value="glass">Glass</option>
+                                        <option value="serving">Serving</option>
+                                        <option value="slice">Slice</option>
+                                        <option value="scoop">Scoop</option>
+                                        <option value="handful">Handful</option>
+                                        <option value="egg">Egg(s)</option>
+                                        <option value="gram">Grams</option>
+                                        <option value="ml">ml</option>
+                                        <option value="tbsp">Tablespoon</option>
+                                        <option value="tsp">Teaspoon</option>
+                                    </select>
+                                </div>
+                                <div id="gram-conversion" class="gram-conversion-hint"></div>
+                                <button id="add-meal-btn" class="add-btn">ADD TO MEAL</button>
+                            </div>
+                            
+                            <!-- Common Foods Quick Add -->
+                            <div class="common-foods">
+                                <h3>Quick Add - Popular Indian Foods:</h3>
+                                <div class="food-categories">
+                                    <!-- Breakfast Items -->
+                                    <div class="food-category-section">
+                                        <h4>Breakfast</h4>
+                                        <div class="food-shortcuts">
+                                            <button class="food-shortcut" data-food="Idli" data-unit="piece" data-default="2">Idli</button>
+                                            <button class="food-shortcut" data-food="Dosa" data-unit="piece" data-default="1">Dosa</button>
+                                            <button class="food-shortcut" data-food="Poha" data-unit="bowl" data-default="1">Poha</button>
+                                            <button class="food-shortcut" data-food="Upma" data-unit="bowl" data-default="1">Upma</button>
+                                            <button class="food-shortcut" data-food="Paratha" data-unit="piece" data-default="2">Paratha</button>
+                                            <button class="food-shortcut" data-food="Puri" data-unit="piece" data-default="3">Puri</button>
+                                            <button class="food-shortcut" data-food="Vada" data-unit="piece" data-default="2">Vada</button>
+                                            <button class="food-shortcut" data-food="Uttapam" data-unit="piece" data-default="1">Uttapam</button>
+                                            <button class="food-shortcut" data-food="Bread Toast" data-unit="slice" data-default="2">Bread Toast</button>
+                                            <button class="food-shortcut" data-food="Omelette" data-unit="egg" data-default="2">Omelette</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Main Course -->
+                                    <div class="food-category-section">
+                                        <h4>Main Course</h4>
+                                        <div class="food-shortcuts">
+                                            <button class="food-shortcut" data-food="Rice" data-unit="bowl" data-default="1">Rice</button>
+                                            <button class="food-shortcut" data-food="Chapati" data-unit="piece" data-default="2">Chapati</button>
+                                            <button class="food-shortcut" data-food="Roti" data-unit="piece" data-default="2">Roti</button>
+                                            <button class="food-shortcut" data-food="Naan" data-unit="piece" data-default="1">Naan</button>
+                                            <button class="food-shortcut" data-food="Biryani" data-unit="plate" data-default="1">Biryani</button>
+                                            <button class="food-shortcut" data-food="Pulao" data-unit="bowl" data-default="1">Pulao</button>
+                                            <button class="food-shortcut" data-food="Khichdi" data-unit="bowl" data-default="1">Khichdi</button>
+                                            <button class="food-shortcut" data-food="Fried Rice" data-unit="plate" data-default="1">Fried Rice</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Curries & Vegetables -->
+                                    <div class="food-category-section">
+                                        <h4>Curries & Vegetables</h4>
+                                        <div class="food-shortcuts">
+                                            <button class="food-shortcut" data-food="Dal" data-unit="bowl" data-default="1">Dal</button>
+                                            <button class="food-shortcut" data-food="Sambar" data-unit="bowl" data-default="1">Sambar</button>
+                                            <button class="food-shortcut" data-food="Rasam" data-unit="bowl" data-default="1">Rasam</button>
+                                            <button class="food-shortcut" data-food="Paneer Curry" data-unit="bowl" data-default="1">Paneer Curry</button>
+                                            <button class="food-shortcut" data-food="Chicken Curry" data-unit="bowl" data-default="1">Chicken Curry</button>
+                                            <button class="food-shortcut" data-food="Fish Curry" data-unit="piece" data-default="2">Fish Curry</button>
+                                            <button class="food-shortcut" data-food="Egg Curry" data-unit="egg" data-default="2">Egg Curry</button>
+                                            <button class="food-shortcut" data-food="Sabzi" data-unit="bowl" data-default="1">Sabzi</button>
+                                            <button class="food-shortcut" data-food="Palak Paneer" data-unit="bowl" data-default="1">Palak Paneer</button>
+                                            <button class="food-shortcut" data-food="Bhindi" data-unit="bowl" data-default="1">Bhindi</button>
+                                            <button class="food-shortcut" data-food="Aloo Gobi" data-unit="bowl" data-default="1">Aloo Gobi</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Snacks -->
+                                    <div class="food-category-section">
+                                        <h4>Snacks</h4>
+                                        <div class="food-shortcuts">
+                                            <button class="food-shortcut" data-food="Samosa" data-unit="piece" data-default="1">Samosa</button>
+                                            <button class="food-shortcut" data-food="Pakora" data-unit="piece" data-default="4">Pakora</button>
+                                            <button class="food-shortcut" data-food="Bhel Puri" data-unit="plate" data-default="1">Bhel Puri</button>
+                                            <button class="food-shortcut" data-food="Pani Puri" data-unit="piece" data-default="6">Pani Puri</button>
+                                            <button class="food-shortcut" data-food="Dhokla" data-unit="piece" data-default="2">Dhokla</button>
+                                            <button class="food-shortcut" data-food="Kachori" data-unit="piece" data-default="1">Kachori</button>
+                                            <button class="food-shortcut" data-food="Vada Pav" data-unit="piece" data-default="1">Vada Pav</button>
+                                            <button class="food-shortcut" data-food="Sandwich" data-unit="piece" data-default="1">Sandwich</button>
+                                            <button class="food-shortcut" data-food="Biscuits" data-unit="piece" data-default="4">Biscuits</button>
+                                            <button class="food-shortcut" data-food="Namkeen" data-unit="handful" data-default="1">Namkeen</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Beverages -->
+                                    <div class="food-category-section">
+                                        <h4>Beverages</h4>
+                                        <div class="food-shortcuts">
+                                            <button class="food-shortcut" data-food="Tea" data-unit="cup" data-default="1">Tea</button>
+                                            <button class="food-shortcut" data-food="Coffee" data-unit="cup" data-default="1">Coffee</button>
+                                            <button class="food-shortcut" data-food="Milk" data-unit="glass" data-default="1">Milk</button>
+                                            <button class="food-shortcut" data-food="Lassi" data-unit="glass" data-default="1">Lassi</button>
+                                            <button class="food-shortcut" data-food="Buttermilk" data-unit="glass" data-default="1">Buttermilk</button>
+                                            <button class="food-shortcut" data-food="Juice" data-unit="glass" data-default="1">Juice</button>
+                                            <button class="food-shortcut" data-food="Coconut Water" data-unit="glass" data-default="1">Coconut Water</button>
+                                            <button class="food-shortcut" data-food="Nimbu Pani" data-unit="glass" data-default="1">Nimbu Pani</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Fruits -->
+                                    <div class="food-category-section">
+                                        <h4>Fruits</h4>
+                                        <div class="food-shortcuts">
+                                            <button class="food-shortcut" data-food="Banana" data-unit="piece" data-default="1">Banana</button>
+                                            <button class="food-shortcut" data-food="Apple" data-unit="piece" data-default="1">Apple</button>
+                                            <button class="food-shortcut" data-food="Mango" data-unit="piece" data-default="1">Mango</button>
+                                            <button class="food-shortcut" data-food="Orange" data-unit="piece" data-default="1">Orange</button>
+                                            <button class="food-shortcut" data-food="Grapes" data-unit="bowl" data-default="1">Grapes</button>
+                                            <button class="food-shortcut" data-food="Papaya" data-unit="bowl" data-default="1">Papaya</button>
+                                            <button class="food-shortcut" data-food="Watermelon" data-unit="bowl" data-default="1">Watermelon</button>
+                                            <button class="food-shortcut" data-food="Pomegranate" data-unit="bowl" data-default="1">Pomegranate</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Sweets -->
+                                    <div class="food-category-section">
+                                        <h4>Sweets & Desserts</h4>
+                                        <div class="food-shortcuts">
+                                            <button class="food-shortcut" data-food="Gulab Jamun" data-unit="piece" data-default="2">Gulab Jamun</button>
+                                            <button class="food-shortcut" data-food="Rasgulla" data-unit="piece" data-default="2">Rasgulla</button>
+                                            <button class="food-shortcut" data-food="Jalebi" data-unit="piece" data-default="2">Jalebi</button>
+                                            <button class="food-shortcut" data-food="Ladoo" data-unit="piece" data-default="1">Ladoo</button>
+                                            <button class="food-shortcut" data-food="Barfi" data-unit="piece" data-default="1">Barfi</button>
+                                            <button class="food-shortcut" data-food="Halwa" data-unit="bowl" data-default="1">Halwa</button>
+                                            <button class="food-shortcut" data-food="Kheer" data-unit="bowl" data-default="1">Kheer</button>
+                                            <button class="food-shortcut" data-food="Ice Cream" data-unit="scoop" data-default="2">Ice Cream</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="meals-content-grid">
+                        <!-- Today's Meals -->
+                        <div class="meals-log-section">
+                            <h2 class="section-title">TODAY'S MEALS</h2>
+                            <div class="date-display" id="meal-date"></div>
+                            
+                            <div class="meals-by-type">
+                                <div class="meal-category" id="breakfast-meals">
+                                    <h3>🌅 Breakfast</h3>
+                                    <ul class="meal-list"></ul>
+                                </div>
+                                <div class="meal-category" id="lunch-meals">
+                                    <h3>☀️ Lunch</h3>
+                                    <ul class="meal-list"></ul>
+                                </div>
+                                <div class="meal-category" id="snack-meals">
+                                    <h3>🍿 Snacks</h3>
+                                    <ul class="meal-list"></ul>
+                                </div>
+                                <div class="meal-category" id="dinner-meals">
+                                    <h3>🌙 Dinner</h3>
+                                    <ul class="meal-list"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nutrition Analytics -->
+                        <div class="nutrition-analytics-section">
+                            <!-- Daily Nutrition Summary -->
+                            <div class="nutrition-card">
+                                <h3 class="analytics-title">TODAY'S NUTRITION</h3>
+                                <div class="nutrition-summary">
+                                    <div class="macro-item">
+                                        <span class="macro-label">Calories</span>
+                                        <span class="macro-value" id="total-calories">0</span>
+                                        <span class="macro-unit">kcal</span>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill calories" id="calories-bar"></div>
+                                        </div>
+                                    </div>
+                                    <div class="macro-item">
+                                        <span class="macro-label">Protein</span>
+                                        <span class="macro-value" id="total-protein">0</span>
+                                        <span class="macro-unit">g</span>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill protein" id="protein-bar"></div>
+                                        </div>
+                                    </div>
+                                    <div class="macro-item">
+                                        <span class="macro-label">Carbs</span>
+                                        <span class="macro-value" id="total-carbs">0</span>
+                                        <span class="macro-unit">g</span>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill carbs" id="carbs-bar"></div>
+                                        </div>
+                                    </div>
+                                    <div class="macro-item">
+                                        <span class="macro-label">Fats</span>
+                                        <span class="macro-value" id="total-fats">0</span>
+                                        <span class="macro-unit">g</span>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill fats" id="fats-bar"></div>
+                                        </div>
+                                    </div>
+                                    <div class="macro-item">
+                                        <span class="macro-label">Fiber</span>
+                                        <span class="macro-value" id="total-fiber">0</span>
+                                        <span class="macro-unit">g</span>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill fiber" id="fiber-bar"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Daily Goals vs Actual -->
+                            <div class="goals-card">
+                                <h3 class="analytics-title">DAILY GOALS</h3>
+                                <div id="nutrition-goals">
+                                    <div class="goal-item">
+                                        <span class="goal-label">Target Calories:</span>
+                                        <span class="goal-value" id="target-calories">2000 kcal</span>
+                                    </div>
+                                    <div class="goal-item">
+                                        <span class="goal-label">Target Protein:</span>
+                                        <span class="goal-value" id="target-protein">50g</span>
+                                    </div>
+                                    <div class="goal-item">
+                                        <span class="goal-label">Water Intake:</span>
+                                        <div class="water-tracker">
+                                            <button class="water-btn" id="add-water">+250ml</button>
+                                            <span id="water-amount">0 / 3000 ml</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recommendations -->
+                            <div class="recommendations-card">
+                                <h3 class="analytics-title">RECOMMENDATIONS</h3>
+                                <div id="meal-recommendations">
+                                    <p>Set up your health profile to get personalized recommendations!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="reminders-view" class="view">
+                <div class="reminders-container">
+                    <!-- Call Reminder Header -->
+                    <div class="reminders-header">
+                        <h2 class="section-title">CALL REMINDERS</h2>
+                        <button id="enable-notifications-btn" class="btn-secondary" style="display: none;">Enable Notifications</button>
+                    </div>
+                    
+                    <!-- Add Reminder Section -->
+                    <div class="add-reminder-section">
+                        <h3 class="subsection-title">Schedule a Call Reminder</h3>
+                        <div class="reminder-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Contact Name</label>
+                                    <input type="text" id="contact-name" class="reminder-input" placeholder="John Doe" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone Number</label>
+                                    <input type="tel" id="contact-number" class="reminder-input" placeholder="+1234567890" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Date</label>
+                                    <input type="date" id="reminder-date" class="reminder-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Time</label>
+                                    <input type="time" id="reminder-time" class="reminder-input" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label>Note (Optional)</label>
+                                    <input type="text" id="reminder-note" class="reminder-input" placeholder="Discuss project updates...">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Reminder Type</label>
+                                    <select id="reminder-type" class="reminder-input">
+                                        <option value="once">One Time</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Alert Before (minutes)</label>
+                                    <select id="alert-before" class="reminder-input">
+                                        <option value="0">At the time</option>
+                                        <option value="5">5 minutes</option>
+                                        <option value="10">10 minutes</option>
+                                        <option value="15">15 minutes</option>
+                                        <option value="30">30 minutes</option>
+                                        <option value="60">1 hour</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button id="add-reminder-btn" class="btn-primary">ADD REMINDER</button>
+                        </div>
+                    </div>
+
+                    <!-- Active Reminders -->
+                    <div class="active-reminders-section">
+                        <h3 class="subsection-title">Upcoming Reminders</h3>
+                        <div id="active-reminders-list" class="reminders-list">
+                            <div class="no-reminders">No upcoming call reminders</div>
+                        </div>
+                    </div>
+
+                    <!-- Completed Reminders -->
+                    <div class="completed-reminders-section">
+                        <h3 class="subsection-title">Call History</h3>
+                        <div id="completed-reminders-list" class="reminders-list">
+                            <div class="no-reminders">No completed calls yet</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -805,6 +1323,16 @@
                             <button id="connect-sheet-btn" class="btn-primary" onclick="window.todoApp.connectToExistingSheet()">
                                 CONNECT TO EXISTING SHEET
                             </button>
+                            
+                            <div class="settings-divider" style="margin: 20px 0; border-top: 1px solid #e9ecef;"></div>
+                            
+                            <label class="settings-label">Manual Task Rollover (for testing):</label>
+                            <button id="manual-rollover-btn" class="btn-secondary" onclick="window.todoApp.manualRollover()">
+                                TRIGGER TASK ROLLOVER
+                            </button>
+                            <small style="display: block; margin-top: 5px; color: #6c757d;">
+                                Forces incomplete tasks from previous day to move to "Tasks Not Done" column and roll over to today
+                            </small>
                             <p style="font-size: 12px; color: #666; margin-top: 10px;">
                                 To sync across devices: Copy the Sheet ID from your first device and paste it here.
                             </p>
@@ -827,23 +1355,62 @@
                     <section class="about-section">
                         <h2 class="section-title">WHAT IS THIS APP?</h2>
                         <div class="about-card">
-                            <p>lifeTracker is a minimalist life management application designed for professionals and entrepreneurs who value simplicity, productivity, and financial awareness.</p>
+                            <p>lifeTracker is a comprehensive life management application designed for individuals who want to track every aspect of their daily life - from tasks and expenses to meals and personal goals.</p>
                             <div class="feature-list">
+                                <h3 style="margin: 20px 0 10px 0; color: #333;">Core Features</h3>
                                 <div class="feature-item">
                                     <span class="feature-icon">✓</span>
-                                    <span>Track daily tasks with a clean, distraction-free interface</span>
+                                    <span>Track daily tasks with automatic rollover for unfinished items</span>
                                 </div>
                                 <div class="feature-item">
                                     <span class="feature-icon">☁️</span>
-                                    <span>Sync automatically with your personal Google Sheet</span>
+                                    <span>Sync all data automatically with your personal Google Sheet</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">💰</span>
+                                    <span>Comprehensive expense tracking with category-wise monthly budgets</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">🍴</span>
+                                    <span>Indian-centric meal tracker with 70+ food items and nutrition calculations</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">📞</span>
+                                    <span>Smart call reminders with browser notifications and snooze options</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">📝</span>
+                                    <span>Organized notes with search, categorization, and pinning features</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">🎯</span>
+                                    <span>Bucket list manager with categories and progress tracking</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">💭</span>
+                                    <span>Daily motivational quotes with randomization</span>
+                                </div>
+                                
+                                <h3 style="margin: 20px 0 10px 0; color: #333;">Smart Features</h3>
+                                <div class="feature-item">
+                                    <span class="feature-icon">🎯</span>
+                                    <span>Budget alerts when spending exceeds category limits</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">🥗</span>
+                                    <span>Automatic gram conversion for accurate nutrition tracking</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-icon">📱</span>
+                                    <span>Mobile-responsive design with one-tap calling on phones</span>
                                 </div>
                                 <div class="feature-item">
                                     <span class="feature-icon">🔄</span>
-                                    <span>Unfinished tasks roll over to the next day automatically</span>
+                                    <span>Recurring reminders (daily/weekly/monthly) for regular calls</span>
                                 </div>
                                 <div class="feature-item">
                                     <span class="feature-icon">📊</span>
-                                    <span>Track your productivity with daily completion metrics</span>
+                                    <span>Visual analytics for expenses, nutrition, and task completion</span>
                                 </div>
                                 <div class="feature-item">
                                     <span class="feature-icon">🌙</span>
@@ -920,6 +1487,13 @@
                 </div>
             </div>
         </main>
+        
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <span class="footer-text">Made with ❤️ by Deepanshu</span>
+            </div>
+        </footer>
     </div>
 
     <script src="config.js"></script>
@@ -929,8 +1503,16 @@
     <script src="google-auth.js"></script>
     <script src="app.js"></script>
     <script src="expense-manager.js"></script>
+    <script src="meal-tracker.js"></script>
+    <script src="call-reminder.js"></script>
     <script src="quote-manager.js"></script>
     <script src="bucket-list-manager.js"></script>
     <script src="notes-manager.js"></script>
+    <script src="streak-manager.js"></script>
+    <script src="smart-dashboard.js"></script>
+    <script src="ai-insights.js"></script>
+    <script src="habit-tracker.js"></script>
+    <script src="voice-commands.js"></script>
+    <script src="smart-widgets.js"></script>
 </body>
 </html>

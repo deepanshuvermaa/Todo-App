@@ -189,6 +189,61 @@ class BucketListManager {
         if (goal.timeframe === 'custom') {
             document.getElementById('custom-date-group').style.display = 'block';
         }
+        
+        // Show existing image if available
+        if (goal.imageUrl) {
+            this.showExistingImage(goal.imageUrl);
+        }
+    }
+    
+    showExistingImage(imageUrl) {
+        const imagePreview = document.getElementById('image-preview');
+        if (!imagePreview) {
+            // Create image preview container if it doesn't exist
+            const fileInput = document.getElementById('goal-image');
+            const previewContainer = document.createElement('div');
+            previewContainer.id = 'image-preview';
+            previewContainer.style.cssText = 'position: relative; margin-top: 10px;';
+            previewContainer.innerHTML = `
+                <img src="${imageUrl}" style="max-width: 200px; max-height: 150px; border-radius: 8px;">
+                <button onclick="window.bucketListManager.removeGoalImage()" 
+                        style="position: absolute; top: 5px; right: 5px; 
+                        background: red; color: white; border: none; 
+                        border-radius: 50%; width: 25px; height: 25px; 
+                        cursor: pointer; font-size: 16px;">×</button>
+            `;
+            fileInput.parentNode.insertBefore(previewContainer, fileInput.nextSibling);
+        } else {
+            imagePreview.innerHTML = `
+                <img src="${imageUrl}" style="max-width: 200px; max-height: 150px; border-radius: 8px;">
+                <button onclick="window.bucketListManager.removeGoalImage()" 
+                        style="position: absolute; top: 5px; right: 5px; 
+                        background: red; color: white; border: none; 
+                        border-radius: 50%; width: 25px; height: 25px; 
+                        cursor: pointer; font-size: 16px;">×</button>
+            `;
+        }
+    }
+    
+    removeGoalImage() {
+        // Remove image from current editing goal
+        if (this.editingGoalId) {
+            const goal = this.goals.find(g => g.id === this.editingGoalId);
+            if (goal) {
+                delete goal.imageUrl;
+                this.saveToLocalStorage();
+            }
+        }
+        
+        // Clear current image
+        this.currentGoalImage = null;
+        document.getElementById('goal-image').value = '';
+        
+        // Remove preview
+        const imagePreview = document.getElementById('image-preview');
+        if (imagePreview) {
+            imagePreview.remove();
+        }
     }
 
     saveGoal() {
@@ -572,7 +627,7 @@ class BucketListManager {
                 ${this.visionImages.slice(0, 6).map(img => `
                     <div class="vision-image-item">
                         <img src="${img.url}" alt="${img.name}">
-                        <button class="remove-vision-btn" onclick="bucketListManager.removeVisionImage('${img.id}')">×</button>
+                        <button class="remove-vision-btn" onclick="window.bucketListManager.removeVisionImage('${img.id}')">×</button>
                     </div>
                 `).join('')}
                 ${this.visionImages.length > 6 ? `
@@ -585,15 +640,21 @@ class BucketListManager {
     }
 
     removeVisionImage(imageId) {
-        this.visionImages = this.visionImages.filter(img => img.id !== imageId);
+        // Convert to string for comparison since IDs might be passed as strings
+        const idToRemove = String(imageId);
+        this.visionImages = this.visionImages.filter(img => String(img.id) !== idToRemove);
         this.saveVisionBoard();
         this.renderVisionBoard();
+        
+        // Show confirmation message
+        this.showMessage('Image removed from vision board', 'success');
     }
 
     openVisionBoard() {
         // Create full-screen vision board modal
         const modal = document.createElement('div');
         modal.className = 'vision-board-modal';
+        modal.id = 'vision-board-modal';
         modal.innerHTML = `
             <div class="vision-board-full">
                 <div class="vision-board-header">
@@ -604,6 +665,7 @@ class BucketListManager {
                     ${this.visionImages.map(img => `
                         <div class="vision-board-image">
                             <img src="${img.url}" alt="${img.name}">
+                            <button class="remove-vision-btn" onclick="window.bucketListManager.removeVisionImage('${img.id}'); window.bucketListManager.closeVisionBoardModal();">×</button>
                         </div>
                     `).join('')}
                 </div>
@@ -613,14 +675,23 @@ class BucketListManager {
         document.body.appendChild(modal);
         
         modal.querySelector('.close-vision-board').addEventListener('click', () => {
-            document.body.removeChild(modal);
+            this.closeVisionBoardModal();
         });
         
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                document.body.removeChild(modal);
+                this.closeVisionBoardModal();
             }
         });
+    }
+    
+    closeVisionBoardModal() {
+        const modal = document.getElementById('vision-board-modal');
+        if (modal) {
+            document.body.removeChild(modal);
+            // Re-render the vision board after closing to update the preview
+            this.renderVisionBoard();
+        }
     }
 
     // Storage Methods
