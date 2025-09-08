@@ -699,23 +699,28 @@ class SmartDashboard {
     loadPriorityTasks() {
         const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
         const today = new Date().toDateString();
+        
+        // Get today's incomplete tasks, sorted by creation time (oldest first)
         const todayTasks = tasks
             .filter(t => new Date(t.date).toDateString() === today && !t.completed)
-            .slice(0, 3);
+            .sort((a, b) => a.id - b.id) // Sort by ID to maintain creation order
+            .slice(0, 3); // Show top 3 priority tasks
         
         const listContainer = document.getElementById('priority-tasks-list');
         if (!listContainer) return;
         
         if (todayTasks.length > 0) {
-            listContainer.innerHTML = todayTasks.map(task => `
+            listContainer.innerHTML = todayTasks.map((task, index) => `
                 <li class="priority-task-item">
                     <input type="checkbox" class="task-checkbox" data-id="${task.id}" 
-                           onchange="window.smartDashboard.completeTask(${task.id})">
-                    <span class="task-text">${task.text}</span>
+                           onchange="window.smartDashboard.completeTask(${task.id})"
+                           id="priority-task-${task.id}">
+                    <label for="priority-task-${task.id}" class="task-text">${task.text}</label>
+                    ${task.rolledOver ? '<span class="rolled-over-badge" title="Rolled over from previous day">📅</span>' : ''}
                 </li>
             `).join('');
         } else {
-            listContainer.innerHTML = '<li class="no-priorities">No tasks for today</li>';
+            listContainer.innerHTML = '<li class="no-priorities">All tasks completed! 🎉</li>';
         }
     }
 
@@ -869,8 +874,16 @@ class SmartDashboard {
 
     completeTask(taskId) {
         if (window.todoApp) {
-            window.todoApp.toggleTask(taskId);
-            this.loadDashboardData();
+            // Mark task as completed (true)
+            window.todoApp.toggleTask(taskId, true);
+            
+            // Refresh dashboard data to update priorities and show next task
+            setTimeout(() => {
+                this.loadDashboardData();
+            }, 100);
+            
+            // Show completion notification
+            this.showNotification('Task completed! 🎉', 'success');
         }
     }
 
