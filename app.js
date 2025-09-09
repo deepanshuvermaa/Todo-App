@@ -1851,26 +1851,34 @@ class TodoApp {
         // Create a temporary notification
         const notification = document.createElement('div');
         notification.className = `message ${type}`;
+        notification.innerHTML = `
+            <div class="message-content">${message}</div>
+            <button class="message-close" onclick="this.parentElement.remove()">×</button>
+        `;
         notification.style.cssText = `
             position: fixed; 
             top: 80px; 
             right: 20px; 
             z-index: 1000; 
             max-width: 350px; 
-            padding: 15px; 
+            padding: 15px 40px 15px 15px; 
             border-radius: 8px; 
             color: white; 
             font-weight: 500;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#007bff'};
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         `;
-        notification.innerHTML = message;
         
         document.body.appendChild(notification);
         
         setTimeout(() => {
-            notification.remove();
-        }, 5000);
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 6000);
     }
 
     escapeHtml(text) {

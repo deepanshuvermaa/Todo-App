@@ -1021,24 +1021,35 @@ class VoiceCommands {
     showNotification(message, type = 'info') {
         const notification = document.createElement('div');
         notification.className = `voice-notification ${type}`;
-        notification.textContent = message;
+        notification.innerHTML = `
+            <div class="notification-content">${message}</div>
+            <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+        `;
         notification.style.cssText = `
             position: fixed;
             top: 80px;
             right: 20px;
             background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196f3'};
             color: white;
-            padding: 15px 20px;
+            padding: 15px 40px 15px 20px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 10001;
             max-width: 300px;
             word-wrap: break-word;
             animation: slideIn 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         `;
         
         document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 4000);
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 6000);
     }
     
     // New smart parsing methods

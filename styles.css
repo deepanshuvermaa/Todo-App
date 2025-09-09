@@ -237,6 +237,37 @@ body.dark-mode .voice-tooltip {
     color: #333;
 }
 
+/* Notification close button styles */
+.notification-close,
+.message-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 10px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.notification-close:hover,
+.message-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.notification-content,
+.message-content {
+    flex: 1;
+    word-wrap: break-word;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: #FFFFFF;
