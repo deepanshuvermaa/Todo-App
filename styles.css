@@ -30,12 +30,13 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Floating Voice Button Styles */
+/* Floating Voice Button Styles - Fixed to not create extra space */
 .floating-voice-btn {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1500; /* Above content but below modals */
+    pointer-events: auto;
 }
 
 .voice-fab {
@@ -169,11 +170,10 @@
 /* Mobile optimizations */
 @media (max-width: 768px) {
     .floating-voice-btn {
-        bottom: 70px;  /* Move up to avoid overlap with content */
+        bottom: 20px;  /* Keep at bottom, over content */
         right: 15px;
-        /* Ensure button stays visible on mobile */
         position: fixed !important;
-        z-index: 1000;  /* Lower z-index to prevent interference */
+        z-index: 1500;  /* Above content */
     }
     
     .voice-fab {
@@ -275,6 +275,9 @@ body {
     color: #333333;
     line-height: 1.5;
     min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .container {
@@ -3292,18 +3295,29 @@ body.dark-mode .note-tags-input {
 
 /* Comprehensive Mobile Responsive Design */
 @media (max-width: 768px) {
-    /* General Layout */
+    /* General Layout - Fix extra space issue */
+    body {
+        overflow-y: auto;
+        height: 100vh;
+    }
+    
     .container {
-        padding: 10px;
+        padding: 0;
         max-width: 100%;
+        min-height: 100vh;
+        margin: 0;
     }
     
     .main-content {
-        padding: 0px;
+        padding: 0;
+        margin: 0;
+        min-height: calc(100vh - 120px); /* Account for header and nav */
     }
     
     .view {
         padding: 10px;
+        min-height: calc(100vh - 120px);
+        background: #E8F4FD; /* Light blue background for content area */
     }
 
     /* Header */
@@ -3453,21 +3467,18 @@ body.dark-mode .note-tags-input {
     
     /* Add mobile notes toggle button */
     .mobile-notes-toggle {
-        display: block;
-        position: fixed;  /* Fixed position to avoid overlap */
-        top: 60px;  /* Below header */
-        right: 10px;  /* Move to right side */
+        display: inline-block;
+        position: absolute;  /* Absolute within notes container */
+        top: 15px;
+        left: 15px;
         background: #007BFF;
         color: white;
         border: none;
-        border-radius: 50%;  /* Circular button */
-        padding: 10px;
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-        z-index: 100;  /* Above content but below modals */
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 14px;
+        z-index: 10;  /* Above content */
         cursor: pointer;
-        z-index: 50;
     }
     
     .mobile-notes-back {
@@ -3500,13 +3511,13 @@ body.dark-mode .note-tags-input {
     
     .notes-editor-header {
         padding: 15px;
-        padding-top: 60px;  /* Space for the toggle button */
+        padding-top: 50px;  /* Space for the toggle button */
+        position: relative;
     }
     
     .note-title-input {
         font-size: 18px;
         padding: 10px 15px;
-        padding-right: 50px;  /* Space for the toggle button on right */
     }
     
     .note-metadata {
@@ -4617,10 +4628,17 @@ body.dark-mode .note-tags-input {
 /* Footer Styles */
 .app-footer {
     background: transparent;
-    padding: 30px 20px;
+    padding: 20px;
     text-align: center;
-    margin-top: 50px;
+    margin-top: auto; /* Push to bottom */
     border-top: 1px solid #e9ecef;
+    display: none; /* Hide footer on mobile to save space */
+}
+
+@media (min-width: 769px) {
+    .app-footer {
+        display: block;
+    }
 }
 
 .footer-content {
@@ -4644,15 +4662,17 @@ body.dark-mode .note-tags-input {
     color: #8b92a0;
 }
 
-/* Ensure footer stays at bottom */
+/* Container should not force extra height */
 .container {
-    min-height: 100vh;
+    min-height: calc(100vh - 60px); /* Account for any fixed headers */
     display: flex;
     flex-direction: column;
+    position: relative; /* For absolute positioning context */
 }
 
 main {
     flex: 1;
+    position: relative; /* Ensure children position correctly */
 }
 
 /* Responsive footer */
