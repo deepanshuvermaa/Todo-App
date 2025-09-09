@@ -409,7 +409,43 @@ class VoiceCommands {
         // Show what was heard
         this.showNotification(`🎤 Heard: "${transcript}"`, 'info');
 
-        // Find matching command
+        // Enhanced smart parsing with prefixes
+        const lowerTranscript = transcript.toLowerCase().trim();
+        
+        // Check for direct prefixes first
+        if (lowerTranscript.startsWith('task:') || lowerTranscript.startsWith('task ')) {
+            const taskText = transcript.substring(5).trim();
+            if (taskText) {
+                this.addTask(taskText);
+                this.speakFeedback(`Task added: ${taskText}`);
+                return;
+            }
+        }
+        
+        if (lowerTranscript.startsWith('expense:') || lowerTranscript.startsWith('expense ')) {
+            const expenseText = transcript.substring(8).trim();
+            this.parseAndAddExpense(expenseText);
+            return;
+        }
+        
+        if (lowerTranscript.startsWith('meal:') || lowerTranscript.startsWith('meal ')) {
+            const mealText = transcript.substring(5).trim();
+            this.parseAndAddMeal(mealText);
+            return;
+        }
+        
+        if (lowerTranscript.startsWith('note:') || lowerTranscript.startsWith('note ')) {
+            const noteText = transcript.substring(5).trim();
+            this.addNote(noteText);
+            return;
+        }
+        
+        if (lowerTranscript.startsWith('water:') || lowerTranscript.includes('glass') && lowerTranscript.includes('water')) {
+            this.parseAndLogWater(lowerTranscript);
+            return;
+        }
+
+        // Try to match existing command patterns
         const matchedCommand = this.commands.find(cmd => {
             return cmd.patterns.some(pattern => pattern.test(transcript));
         });
@@ -427,13 +463,8 @@ class VoiceCommands {
                 this.showNotification(`❌ Could not execute: "${transcript}"`, 'error');
             }
         } else {
-            // Suggest similar commands
-            const suggestions = this.getSuggestions(transcript);
-            if (suggestions.length > 0) {
-                this.showNotification(`❓ Did you mean: ${suggestions.join(', ')}?`, 'warning');
-            } else {
-                this.showNotification(`❓ Try saying: "Add task", "Go to finance", "Show habits"`, 'warning');
-            }
+            // Smart context detection if no prefix
+            this.smartParse(transcript);
         }
     }
 
@@ -550,63 +581,168 @@ class VoiceCommands {
     }
 
     showHelp() {
-        const commandList = this.commands.map(cmd => 
-            `• ${cmd.description}`
-        ).join('\n');
+        // Remove any existing modal
+        const existingModal = document.querySelector('.voice-help-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
 
         const helpModal = document.createElement('div');
         helpModal.className = 'modal voice-help-modal';
+        helpModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
         helpModal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Voice Commands</h2>
-                    <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</button>
+            <div class="modal-content" style="
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                max-width: 700px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            ">
+                <div class="modal-header" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #f0f0f0;
+                    padding-bottom: 15px;
+                ">
+                    <h2 style="margin: 0; color: #333;">🎤 Voice Commands</h2>
+                    <button class="modal-close" onclick="this.closest('.voice-help-modal').remove()" style="
+                        background: none;
+                        border: none;
+                        font-size: 28px;
+                        cursor: pointer;
+                        color: #666;
+                    ">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <h3>Available Commands:</h3>
-                    <div class="command-categories">
-                        <div class="command-category">
-                            <h4>📝 Tasks</h4>
-                            <ul>
-                                <li>"Add task buy groceries"</li>
-                                <li>"Complete task buy groceries"</li>
-                                <li>"Show my tasks"</li>
+                    <div style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin-bottom: 20px;
+                    ">
+                        <h4 style="margin: 0 0 10px 0;">🚀 NEW! Smart Prefixes</h4>
+                        <p style="margin: 5px 0; opacity: 0.95;">Start your command with these prefixes for direct actions:</p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
+                            <div><strong>task:</strong> "task: buy groceries"</div>
+                            <div><strong>expense:</strong> "expense: lunch 150"</div>
+                            <div><strong>meal:</strong> "meal: 2 chapati for lunch"</div>
+                            <div><strong>note:</strong> "note: call mom tomorrow"</div>
+                            <div><strong>water:</strong> "water: 2 glasses"</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin: 15px 0 10px 0; color: #333;">Available Commands:</h3>
+                    <div class="command-categories" style="
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 15px;
+                    ">
+                        <div class="command-category" style="
+                            background: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 8px;
+                            border-left: 4px solid #007bff;
+                        ">
+                            <h4 style="margin: 0 0 10px 0; color: #333;">📝 Tasks</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; list-style: none;">
+                                <li>✓ "Add task buy groceries"</li>
+                                <li>✓ "task: complete homework"</li>
+                                <li>✓ "Remind me to call John"</li>
+                                <li>✓ "Show my tasks"</li>
                             </ul>
                         </div>
-                        <div class="command-category">
-                            <h4>💰 Expenses</h4>
-                            <ul>
-                                <li>"Add expense 500 for lunch"</li>
-                                <li>"Show my expenses"</li>
+                        
+                        <div class="command-category" style="
+                            background: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 8px;
+                            border-left: 4px solid #28a745;
+                        ">
+                            <h4 style="margin: 0 0 10px 0; color: #333;">💰 Expenses</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; list-style: none;">
+                                <li>✓ "expense: grocery 500"</li>
+                                <li>✓ "Spent 150 on lunch"</li>
+                                <li>✓ "Bought coffee for 50"</li>
+                                <li>✓ "Show my expenses"</li>
                             </ul>
                         </div>
-                        <div class="command-category">
-                            <h4>🍽️ Meals</h4>
-                            <ul>
-                                <li>"Log meal chicken curry"</li>
-                                <li>"Log water" / "Drink water"</li>
+                        
+                        <div class="command-category" style="
+                            background: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 8px;
+                            border-left: 4px solid #ffc107;
+                        ">
+                            <h4 style="margin: 0 0 10px 0; color: #333;">🍽️ Meals</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; list-style: none;">
+                                <li>✓ "meal: 2 eggs for breakfast"</li>
+                                <li>✓ "Ate chicken curry"</li>
+                                <li>✓ "water: 3 glasses"</li>
+                                <li>✓ "Had 2 chapati and dal"</li>
                             </ul>
                         </div>
-                        <div class="command-category">
-                            <h4>🧭 Navigation</h4>
-                            <ul>
-                                <li>"Go to dashboard"</li>
-                                <li>"Show tasks" / "Open expenses"</li>
-                                <li>"Open habits" / "Show notes"</li>
+                        
+                        <div class="command-category" style="
+                            background: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 8px;
+                            border-left: 4px solid #dc3545;
+                        ">
+                            <h4 style="margin: 0 0 10px 0; color: #333;">📝 Notes</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; list-style: none;">
+                                <li>✓ "note: meeting at 3pm"</li>
+                                <li>✓ "note: buy milk tomorrow"</li>
+                                <li>✓ "Remember to pay bills"</li>
                             </ul>
                         </div>
-                        <div class="command-category">
-                            <h4>⚡ Quick Actions</h4>
-                            <ul>
-                                <li>"Start pomodoro"</li>
-                                <li>"What's the time?"</li>
-                                <li>"Set reminder call mom"</li>
+                        
+                        <div class="command-category" style="
+                            background: #f9f9f9;
+                            padding: 15px;
+                            border-radius: 8px;
+                            border-left: 4px solid #6c757d;
+                        ">
+                            <h4 style="margin: 0 0 10px 0; color: #333;">🧭 Navigation</h4>
+                            <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; list-style: none;">
+                                <li>✓ "Go to dashboard"</li>
+                                <li>✓ "Show expenses"</li>
+                                <li>✓ "Open habits"</li>
                             </ul>
                         </div>
                     </div>
-                    <div class="voice-shortcuts">
-                        <h4>Keyboard Shortcut:</h4>
-                        <p>Press <kbd>Ctrl + Shift + V</kbd> to activate voice commands</p>
+                    
+                    <div style="
+                        background: #f0f8ff;
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin-top: 20px;
+                    ">
+                        <h4 style="margin: 0 0 10px 0; color: #007bff;">⌨️ Keyboard Shortcut</h4>
+                        <p style="margin: 0; color: #555;">Press <kbd style="
+                            background: #fff;
+                            border: 1px solid #ccc;
+                            border-radius: 3px;
+                            padding: 2px 6px;
+                            font-family: monospace;
+                        ">Ctrl + Shift + V</kbd> to activate voice commands</p>
                     </div>
                 </div>
             </div>
@@ -766,6 +902,188 @@ class VoiceCommands {
         
         document.body.appendChild(notification);
         setTimeout(() => notification.remove(), 4000);
+    }
+    
+    // New smart parsing methods
+    smartParse(transcript) {
+        const lower = transcript.toLowerCase();
+        
+        // Detect expense patterns
+        const expensePatterns = [
+            /spent (\d+) (?:rupees?|rs?\.?|₹)?\s*(?:on|for)?\s*(.+)/i,
+            /(\d+) (?:rupees?|rs?\.?|₹)?\s*(?:on|for)\s*(.+)/i,
+            /bought (.+) for (\d+)/i
+        ];
+        
+        for (const pattern of expensePatterns) {
+            const match = transcript.match(pattern);
+            if (match) {
+                const amount = match[1] || match[2];
+                const description = match[2] || match[1];
+                this.parseAndAddExpense(`${description} ${amount}`);
+                return;
+            }
+        }
+        
+        // Detect meal patterns
+        const mealKeywords = ['ate', 'had', 'breakfast', 'lunch', 'dinner', 'snack', 'food'];
+        if (mealKeywords.some(keyword => lower.includes(keyword))) {
+            this.parseAndAddMeal(transcript);
+            return;
+        }
+        
+        // Detect action words for tasks
+        const taskKeywords = ['remind', 'need to', 'have to', 'must', 'should', 'will', 'going to'];
+        if (taskKeywords.some(keyword => lower.includes(keyword))) {
+            const taskText = transcript.replace(/remind me to |i need to |i have to |i must |i should |i will |i'm going to /gi, '');
+            this.addTask(taskText);
+            this.speakFeedback(`Task added: ${taskText}`);
+            return;
+        }
+        
+        // Default to adding as a task
+        this.addTask(transcript);
+        this.speakFeedback(`Task added: ${transcript}`);
+    }
+    
+    parseAndAddExpense(text) {
+        // Parse amount and description from text
+        const amountMatch = text.match(/(\d+(?:\.\d+)?)/); 
+        const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+        
+        // Remove amount from description
+        let description = text.replace(/(\d+(?:\.\d+)?)/g, '').trim();
+        description = description.replace(/^(on|for)\s+/i, '');
+        
+        // Detect category from description
+        let category = 'other';
+        const categoryKeywords = {
+            'food': ['food', 'lunch', 'dinner', 'breakfast', 'snack', 'restaurant', 'cafe'],
+            'transport': ['taxi', 'uber', 'ola', 'bus', 'metro', 'fuel', 'petrol', 'diesel'],
+            'shopping': ['shopping', 'clothes', 'shoes', 'amazon', 'flipkart'],
+            'entertainment': ['movie', 'netflix', 'spotify', 'game'],
+            'health': ['medicine', 'doctor', 'hospital', 'pharmacy', 'gym']
+        };
+        
+        for (const [cat, keywords] of Object.entries(categoryKeywords)) {
+            if (keywords.some(keyword => description.toLowerCase().includes(keyword))) {
+                category = cat;
+                break;
+            }
+        }
+        
+        if (amount > 0 && window.expenseManager) {
+            // Add the expense directly
+            const expense = {
+                id: Date.now(),
+                amount: amount,
+                category: category,
+                description: description || 'Voice expense',
+                date: new Date().toISOString().split('T')[0],
+                timestamp: Date.now()
+            };
+            
+            window.expenseManager.expenses.push(expense);
+            window.expenseManager.saveExpenses();
+            window.expenseManager.renderExpenses();
+            window.expenseManager.updateAnalytics();
+            
+            this.showNotification(`💰 Expense added: ₹${amount} for ${description || category}`, 'success');
+            this.speakFeedback(`Added expense of ${amount} rupees for ${description || category}`);
+        } else {
+            this.showNotification('Could not parse expense amount', 'error');
+        }
+    }
+    
+    parseAndAddMeal(text) {
+        if (!window.mealTracker) return;
+        
+        // Detect meal type
+        let mealType = 'snack';
+        if (text.toLowerCase().includes('breakfast')) mealType = 'breakfast';
+        else if (text.toLowerCase().includes('lunch')) mealType = 'lunch';
+        else if (text.toLowerCase().includes('dinner')) mealType = 'dinner';
+        
+        // Clean up the food item text
+        let foodItem = text.replace(/for (breakfast|lunch|dinner|snack)/gi, '').trim();
+        foodItem = foodItem.replace(/^(ate|had|consumed)\s+/gi, '');
+        
+        if (foodItem) {
+            // Try to detect quantity
+            const quantityMatch = foodItem.match(/(\d+)\s*(pieces?|plates?|bowls?|cups?|glasses?)?/i);
+            const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
+            
+            // Clean food item
+            foodItem = foodItem.replace(/(\d+)\s*(pieces?|plates?|bowls?|cups?|glasses?)?/gi, '').trim();
+            
+            // Create meal object
+            const meal = {
+                id: `meal_${Date.now()}`,
+                mealType: mealType,
+                foodItem: foodItem,
+                quantity: quantity,
+                unit: 'serving',
+                calories: 200, // Default estimate
+                date: new Date().toISOString().split('T')[0],
+                nutrition: {
+                    calories: 200,
+                    protein: 10,
+                    carbs: 20,
+                    fats: 5,
+                    fiber: 2
+                }
+            };
+            
+            window.mealTracker.meals.push(meal);
+            window.mealTracker.saveMeals();
+            window.mealTracker.displayMeal(meal);
+            window.mealTracker.updateNutritionSummary();
+            
+            this.showNotification(`🍽️ Meal logged: ${foodItem} for ${mealType}`, 'success');
+            this.speakFeedback(`Logged ${foodItem} for ${mealType}`);
+        }
+    }
+    
+    parseAndLogWater(text) {
+        if (!window.mealTracker) return;
+        
+        // Extract number of glasses
+        const numberMatch = text.match(/(\d+)\s*(glasses?|glass)/i);
+        const glasses = numberMatch ? parseInt(numberMatch[1]) : 1;
+        
+        // Add water intake (250ml per glass)
+        window.mealTracker.waterIntake += glasses;
+        window.mealTracker.updateWaterIntake();
+        
+        this.showNotification(`💧 Logged ${glasses} glass${glasses > 1 ? 'es' : ''} of water`, 'success');
+        this.speakFeedback(`Logged ${glasses} glass${glasses > 1 ? 'es' : ''} of water`);
+    }
+    
+    addNote(text) {
+        // Store note in localStorage
+        const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+        const note = {
+            id: `note_${Date.now()}`,
+            content: text,
+            date: new Date().toISOString(),
+            category: 'voice'
+        };
+        notes.push(note);
+        localStorage.setItem('notes', JSON.stringify(notes));
+        
+        this.showNotification(`📝 Note saved: "${text}"`, 'success');
+        this.speakFeedback(`Note saved: ${text}`);
+    }
+    
+    speakFeedback(message) {
+        // Use text-to-speech for feedback
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 0.8;
+            speechSynthesis.speak(utterance);
+        }
     }
 }
 
