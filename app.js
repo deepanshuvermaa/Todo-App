@@ -10,9 +10,7 @@ class TodoApp {
     }
 
     async init() {
-        // Show loading overlay
-        this.showLoadingOverlay(true);
-        
+        // Initialize UI immediately - no loading overlay blocking the app
         this.initDarkMode(); // Initialize dark mode
         this.setupEventListeners();
         this.updateDateDisplay();
@@ -20,55 +18,15 @@ class TodoApp {
         // Check network status
         this.setupNetworkHandlers();
         
-        // Cloud-first initialization
-        let cloudDataLoaded = false;
+        // Load local data FIRST so app is immediately usable
+        this.loadLocalTasks();
         
-        // Initialize Google API and load cloud data first
-        if (typeof CONFIG !== 'undefined' && 
-            CONFIG.GOOGLE_CLIENT_ID && 
-            !CONFIG.GOOGLE_CLIENT_ID.includes('YOUR') &&
-            CONFIG.GOOGLE_API_KEY &&
-            !CONFIG.GOOGLE_API_KEY.includes('YOUR')) {
-            
-            try {
-                await this.initGoogleAPI();
-                
-                // If authenticated and has sheet, load from cloud first
-                if (this.isAuthenticated && this.sheetId) {
-                    console.log('Loading data from Google Sheets...');
-                    await this.loadFromSheets();
-                    cloudDataLoaded = true;
-                    
-                    // Merge with any local pending changes
-                    await this.mergeLocalPendingChanges();
-                }
-            } catch (error) {
-                console.error('Error loading cloud data:', error);
-                this.showMessage('Could not load cloud data. Using local data.', 'warning');
-            }
-        } else {
-            console.log('Google API not configured. Running in local mode.');
-            if (CONFIG && CONFIG.GOOGLE_API_KEY && CONFIG.GOOGLE_API_KEY.includes('YOUR')) {
-                this.showMessage('Running in local mode. Add your Google API key to enable cloud sync.', 'info');
-            }
-        }
-        
-        // If cloud data wasn't loaded, load local data
-        if (!cloudDataLoaded) {
-            this.loadLocalTasks();
-        }
-        
-        // Render and update UI
+        // Render and update UI immediately
         this.renderTasks();
         this.updateMetrics();
         
-        // Hide loading overlay
-        this.showLoadingOverlay(false);
-        
-        // Start auto-sync if authenticated
-        if (this.isAuthenticated && this.sheetId) {
-            this.startAutoSync();
-        }
+        // Now handle Google Sheets sync in the background (non-blocking)
+        this.initBackgroundSync();
         
         this.startAutoRollover();
         
@@ -79,6 +37,52 @@ class TodoApp {
         
         // Initialize collapsible sections
         this.initializeCollapsibleSections();
+        
+        // Initialize export/import handlers
+        this.initializeDataPortability();
+    }
+    
+    async initBackgroundSync() {
+        // Handle Google Sheets sync in the background without blocking the UI
+        if (typeof CONFIG !== 'undefined' && 
+            CONFIG.GOOGLE_CLIENT_ID && 
+            !CONFIG.GOOGLE_CLIENT_ID.includes('YOUR') &&
+            CONFIG.GOOGLE_API_KEY &&
+            !CONFIG.GOOGLE_API_KEY.includes('YOUR')) {
+            
+            try {
+                await this.initGoogleAPI();
+                
+                // If authenticated and has sheet, sync from cloud in background
+                if (this.isAuthenticated && this.sheetId) {
+                    console.log('Syncing with Google Sheets in background...');
+                    
+                    // Show a small, non-blocking sync indicator
+                    this.updateSyncStatus('syncing');
+                    
+                    await this.loadFromSheets();
+                    
+                    // Merge with any local pending changes
+                    await this.mergeLocalPendingChanges();
+                    
+                    // Re-render with synced data
+                    this.renderTasks();
+                    this.updateMetrics();
+                    
+                    this.updateSyncStatus('success');
+                    
+                    // Start auto-sync
+                    this.startAutoSync();
+                }
+            } catch (error) {
+                console.error('Background sync error:', error);
+                // Don't show error messages for background sync failures
+                // App continues working with local data
+                this.updateSyncStatus('failed');
+            }
+        } else {
+            console.log('Google API not configured. Running in local mode.');
+        }
     }
 
     setupNetworkHandlers() {
@@ -1659,38 +1663,116 @@ class TodoApp {
         }
     }
 
-    showLoadingOverlay(show) {
-        let overlay = document.getElementById('loading-overlay');
+    // Removed showLoadingOverlay - no longer blocking the UI with loading screens
+    // The app now loads immediately with local data and syncs in the background
+    
+    initializeDataPortability() {
+        // Add export button handler
+        const exportBtn = document.getElementById('export-data-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportAllData());
+        }
         
-        if (show) {
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'loading-overlay';
-                overlay.innerHTML = `
-                    <div class="loading-content">
-                        <div class="loading-spinner"></div>
-                        <div class="loading-text">Syncing with Google Sheets...</div>
-                    </div>
-                `;
-                overlay.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.7);
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                `;
-                document.body.appendChild(overlay);
+        // Add import button handler
+        const importBtn = document.getElementById('import-data-btn');
+        const importInput = document.getElementById('import-data-input');
+        
+        if (importBtn && importInput) {
+            importBtn.addEventListener('click', () => importInput.click());
+            importInput.addEventListener('change', (e) => this.importData(e));
+        }
+    }
+    
+    exportAllData() {
+        try {
+            // Gather all data from localStorage
+            const exportData = {
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                tasks: this.tasks,
+                expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
+                meals: JSON.parse(localStorage.getItem('meals') || '[]'),
+                habits: JSON.parse(localStorage.getItem('habits') || '[]'),
+                notes: JSON.parse(localStorage.getItem('notes') || '[]'),
+                bucketList: JSON.parse(localStorage.getItem('bucketListItems') || '[]'),
+                settings: {
+                    darkMode: localStorage.getItem('darkMode'),
+                    sheetId: this.sheetId
+                }
+            };
+            
+            // Create downloadable file
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `lifetracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+            
+            this.showMessage('✅ Data exported successfully!', 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showMessage('❌ Failed to export data', 'error');
+        }
+    }
+    
+    async importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const importData = JSON.parse(text);
+            
+            // Validate data structure
+            if (!importData.version || !importData.tasks) {
+                throw new Error('Invalid backup file format');
             }
-            overlay.style.display = 'flex';
-        } else {
-            if (overlay) {
-                overlay.style.display = 'none';
+            
+            // Confirm before importing
+            if (!confirm('This will replace all your current data. Are you sure?')) {
+                return;
             }
+            
+            // Import all data
+            this.tasks = importData.tasks || [];
+            localStorage.setItem('tasks', JSON.stringify(this.tasks));
+            
+            if (importData.expenses) {
+                localStorage.setItem('expenses', JSON.stringify(importData.expenses));
+            }
+            if (importData.meals) {
+                localStorage.setItem('meals', JSON.stringify(importData.meals));
+            }
+            if (importData.habits) {
+                localStorage.setItem('habits', JSON.stringify(importData.habits));
+            }
+            if (importData.notes) {
+                localStorage.setItem('notes', JSON.stringify(importData.notes));
+            }
+            if (importData.bucketList) {
+                localStorage.setItem('bucketListItems', JSON.stringify(importData.bucketList));
+            }
+            
+            // Reload the app to show imported data
+            this.renderTasks();
+            this.updateMetrics();
+            
+            this.showMessage('✅ Data imported successfully!', 'success');
+            
+            // Reset file input
+            event.target.value = '';
+        } catch (error) {
+            console.error('Import error:', error);
+            this.showMessage('❌ Failed to import data. Please check the file format.', 'error');
         }
     }
 

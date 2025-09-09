@@ -11,7 +11,9 @@
       "Bash(dir:*)",
       "Bash(git init:*)",
       "Bash(findstr:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(git checkout:*)",
+      "Bash(start index.html)"
     ],
     "deny": [],
     "ask": []
