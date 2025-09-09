@@ -121,11 +121,14 @@
     transform: translate(-50%, -50%);
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    padding: 30px;
+    gap: 15px;
+    padding: 20px;
     z-index: 2001;
-    width: 90%;
-    max-width: 360px;
+    width: 320px;
+    max-width: 90vw;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .quick-add-item {
@@ -133,16 +136,16 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100px;
-    height: 100px;
-    background: white;
-    border: none;
-    border-radius: 20px;
+    width: 90px;
+    height: 90px;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 16px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(100px);
+    transform: scale(0);
     opacity: 0;
     transition: all 0.3s ease;
+    animation: popIn 0.3s ease forwards;
 }
 
 .quick-add-item .quick-add-icon {
@@ -164,6 +167,13 @@
 @keyframes slideUp {
     to {
         transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes popIn {
+    to {
+        transform: scale(1);
         opacity: 1;
     }
 }
@@ -476,50 +486,134 @@
     background: #0056b3;
 }
 
-/* Notes editor toolbar fix */
-.notes-editor-toolbar,
-.editor-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    margin-bottom: 10px;
+/* Notes editor toolbar fix - complete redesign */
+@media (max-width: 768px) {
+    .notes-editor-toolbar,
+    .editor-toolbar,
+    .notes-editor-actions {
+        display: grid !important;
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 4px !important;
+        padding: 8px !important;
+        background: #f8f9fa !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .format-btn,
+    .editor-btn,
+    .note-action-btn {
+        width: 100% !important;
+        min-width: unset !important;
+        height: 40px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 16px !important;
+        cursor: pointer !important;
+    }
+    
+    .format-btn:active,
+    .editor-btn:active {
+        background: #007BFF !important;
+        color: white !important;
+        transform: scale(0.95);
+    }
+    
+    /* Color palette specific fixes */
+    .color-palette {
+        position: absolute !important;
+        grid-column: span 3 !important;
+        margin-top: 5px !important;
+    }
 }
 
-.format-btn,
-.editor-btn {
-    min-width: 36px;
-    min-height: 36px;
-    padding: 8px;
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.format-btn:hover,
-.editor-btn:hover {
-    background: #007BFF;
-    color: white;
-    border-color: #007BFF;
+/* Task View Mobile Styling */
+@media (max-width: 768px) {
+    .task-item {
+        background: white !important;
+        border: 1px solid #e9ecef !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+        margin: 8px 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    .task-checkbox {
+        width: 20px !important;
+        height: 20px !important;
+        min-width: 20px !important;
+        accent-color: #007BFF !important;
+    }
+    
+    .task-text {
+        flex: 1 !important;
+        font-size: 15px !important;
+        color: #333 !important;
+    }
+    
+    .task-item.completed .task-text {
+        text-decoration: line-through !important;
+        color: #6c757d !important;
+    }
+    
+    .task-delete {
+        background: #dc3545 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 28px !important;
+        height: 28px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 18px !important;
+        cursor: pointer !important;
+    }
+    
+    #pending-tasks,
+    #completed-tasks {
+        padding: 0 !important;
+        margin: 0 !important;
+        list-style: none !important;
+    }
 }
 
 /* Mobile-specific adjustments */
 @media (max-width: 768px) {
     /* Hide desktop navigation */
+    .nav-tabs,
     .nav-tabs.desktop-nav {
         display: none !important;
+    }
+    
+    /* Fix header positioning */
+    .header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        background: white !important;
+        margin-bottom: 0 !important;
     }
     
     /* Adjust main content for bottom nav */
     .main-content {
         padding-bottom: 70px !important;
+        padding-top: 10px !important;
+        margin-top: 0 !important;
+    }
+    
+    /* Ensure views don't go under header */
+    .view {
+        padding-top: 10px !important;
     }
     
     /* Ensure touch targets are 44px minimum */

@@ -319,28 +319,37 @@ class MobileUIEnhancement {
     setupSmartHeader() {
         const header = document.querySelector('.header');
         const navTabs = document.querySelector('.nav-tabs');
+        const mainContent = document.querySelector('.main-content');
+        const allViews = document.querySelectorAll('.view');
+        
         if (!header) return;
         
-        // For mobile, just keep the header fixed without auto-hide
-        // This prevents the navbar from appearing in the middle of the screen
+        // For mobile, properly handle header without overlapping content
         if (this.isMobile) {
-            header.style.position = 'fixed';
+            // Keep header at top but not fixed to avoid overlap
+            header.style.position = 'sticky';
             header.style.top = '0';
             header.style.left = '0';
             header.style.right = '0';
             header.style.zIndex = '100';
-            header.style.transform = 'translateY(0)';
+            header.style.background = 'white';
+            header.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
             
             // Hide desktop nav tabs on mobile
             if (navTabs) {
                 navTabs.style.display = 'none';
             }
             
-            // Adjust main content padding
-            const mainContent = document.querySelector('.main-content');
+            // Ensure proper spacing for all views
             if (mainContent) {
-                mainContent.style.paddingTop = '60px'; // Fixed padding for header
+                mainContent.style.paddingTop = '10px';
+                mainContent.style.marginTop = '0';
             }
+            
+            // Add padding to all view containers
+            allViews.forEach(view => {
+                view.style.paddingTop = '10px';
+            });
         }
     }
     
