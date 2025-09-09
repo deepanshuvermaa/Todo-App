@@ -10,28 +10,64 @@ class TodoApp {
     }
 
     async init() {
+        // Show loading overlay
+        this.showLoadingOverlay(true);
+        
         this.initDarkMode(); // Initialize dark mode
         this.setupEventListeners();
         this.updateDateDisplay();
-        this.loadLocalTasks();
-        this.renderTasks(); // Add this to show tasks immediately
-        this.updateMetrics();
         
         // Check network status
         this.setupNetworkHandlers();
         
-        // Initialize Google API only if config is set and valid
+        // Cloud-first initialization
+        let cloudDataLoaded = false;
+        
+        // Initialize Google API and load cloud data first
         if (typeof CONFIG !== 'undefined' && 
             CONFIG.GOOGLE_CLIENT_ID && 
             !CONFIG.GOOGLE_CLIENT_ID.includes('YOUR') &&
             CONFIG.GOOGLE_API_KEY &&
             !CONFIG.GOOGLE_API_KEY.includes('YOUR')) {
-            await this.initGoogleAPI();
+            
+            try {
+                await this.initGoogleAPI();
+                
+                // If authenticated and has sheet, load from cloud first
+                if (this.isAuthenticated && this.sheetId) {
+                    console.log('Loading data from Google Sheets...');
+                    await this.loadFromSheets();
+                    cloudDataLoaded = true;
+                    
+                    // Merge with any local pending changes
+                    await this.mergeLocalPendingChanges();
+                }
+            } catch (error) {
+                console.error('Error loading cloud data:', error);
+                this.showMessage('Could not load cloud data. Using local data.', 'warning');
+            }
         } else {
             console.log('Google API not configured. Running in local mode.');
             if (CONFIG && CONFIG.GOOGLE_API_KEY && CONFIG.GOOGLE_API_KEY.includes('YOUR')) {
                 this.showMessage('Running in local mode. Add your Google API key to enable cloud sync.', 'info');
             }
+        }
+        
+        // If cloud data wasn't loaded, load local data
+        if (!cloudDataLoaded) {
+            this.loadLocalTasks();
+        }
+        
+        // Render and update UI
+        this.renderTasks();
+        this.updateMetrics();
+        
+        // Hide loading overlay
+        this.showLoadingOverlay(false);
+        
+        // Start auto-sync if authenticated
+        if (this.isAuthenticated && this.sheetId) {
+            this.startAutoSync();
         }
         
         this.startAutoRollover();
@@ -49,19 +85,37 @@ class TodoApp {
         // Handle online/offline events
         window.addEventListener('online', () => {
             this.showMessage('Connection restored', 'success');
+            this.updateSyncStatus('pending');
+            
             if (this.isAuthenticated && this.sheetId) {
-                this.syncToSheets();
+                // Try to sync any pending changes
+                this.syncToSheetsWithRetry();
             }
         });
 
         window.addEventListener('offline', () => {
             this.showMessage('No internet connection. Working offline.', 'warning');
+            this.updateSyncStatus('offline');
         });
 
         // Check initial network status
         if (!navigator.onLine) {
             this.showMessage('No internet connection. Your tasks will sync when you\'re back online.', 'info');
+            this.updateSyncStatus('offline');
         }
+        
+        // Monitor for pending changes
+        setInterval(() => {
+            if (this.hasPendingChanges() && navigator.onLine && this.isAuthenticated) {
+                this.updateSyncStatus('pending');
+            }
+        }, 5000);
+    }
+    
+    hasPendingChanges() {
+        // Check if there are unsaved changes
+        const pendingChanges = localStorage.getItem('pendingChanges');
+        return pendingChanges && JSON.parse(pendingChanges).length > 0;
     }
 
     initDarkMode() {
@@ -250,10 +304,8 @@ class TodoApp {
         this.renderTasks();
         this.updateMetrics();
         input.value = '';
-
-        if (this.isAuthenticated && this.sheetId) {
-            this.syncToSheets();
-        }
+        
+        // saveTasks() will handle the sync automatically
     }
 
     renderTasks() {
@@ -346,25 +398,52 @@ class TodoApp {
         }
     }
     
-    updateSyncStatus(status) {
+    updateSyncStatus(status, details = '') {
         // Update UI sync indicator
         const syncIndicator = document.getElementById('sync-status-indicator');
         if (syncIndicator) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
             switch(status) {
                 case 'syncing':
                     syncIndicator.innerHTML = '🔄 Syncing...';
                     syncIndicator.className = 'sync-status syncing';
+                    syncIndicator.title = 'Syncing data with Google Sheets';
                     break;
                 case 'success':
                     syncIndicator.innerHTML = '✅ Synced';
                     syncIndicator.className = 'sync-status success';
+                    syncIndicator.title = `Last synced at ${timeStr}`;
+                    this.lastSuccessfulSync = now;
+                    
                     setTimeout(() => {
-                        syncIndicator.innerHTML = '☁️ Connected';
+                        if (navigator.onLine) {
+                            syncIndicator.innerHTML = '☁️ Connected';
+                            syncIndicator.className = 'sync-status connected';
+                        }
                     }, 2000);
                     break;
                 case 'failed':
-                    syncIndicator.innerHTML = '❌ Sync Failed';
+                    syncIndicator.innerHTML = '⚠️ Sync Failed';
                     syncIndicator.className = 'sync-status failed';
+                    syncIndicator.title = `Sync failed at ${timeStr}. ${details || 'Click to retry'}`;
+                    
+                    // Add click handler for retry
+                    syncIndicator.style.cursor = 'pointer';
+                    syncIndicator.onclick = () => {
+                        this.forceSyncAllData();
+                    };
+                    break;
+                case 'offline':
+                    syncIndicator.innerHTML = '🔌 Offline';
+                    syncIndicator.className = 'sync-status offline';
+                    syncIndicator.title = 'No internet connection';
+                    break;
+                case 'pending':
+                    syncIndicator.innerHTML = '⏳ Pending';
+                    syncIndicator.className = 'sync-status pending';
+                    syncIndicator.title = 'Changes pending sync';
                     break;
             }
         }
@@ -372,22 +451,60 @@ class TodoApp {
     
     storePendingSync() {
         // Store current state for later sync
-        const pendingData = {
-            tasks: this.tasks,
-            timestamp: new Date().toISOString()
-        };
-        localStorage.setItem('pendingSync', JSON.stringify(pendingData));
+        const existingPending = JSON.parse(localStorage.getItem('pendingChanges') || '[]');
+        
+        // Add current tasks to pending changes
+        this.tasks.forEach(task => {
+            if (!existingPending.find(p => p.type === 'task' && p.data.id === task.id)) {
+                existingPending.push({
+                    type: 'task',
+                    data: task,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+        
+        // Add expenses if any
+        if (window.expenseManager && window.expenseManager.expenses) {
+            window.expenseManager.expenses.forEach(expense => {
+                if (!existingPending.find(p => p.type === 'expense' && p.data.id === expense.id)) {
+                    existingPending.push({
+                        type: 'expense',
+                        data: expense,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            });
+        }
+        
+        // Add meals if any
+        if (window.mealTracker && window.mealTracker.meals) {
+            window.mealTracker.meals.forEach(meal => {
+                if (!existingPending.find(p => p.type === 'meal' && p.data.id === meal.id)) {
+                    existingPending.push({
+                        type: 'meal',
+                        data: meal,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            });
+        }
+        
+        localStorage.setItem('pendingChanges', JSON.stringify(existingPending));
+        this.updateSyncStatus('pending', 'Changes saved locally');
     }
     
     async attemptPendingSync() {
-        const pendingData = localStorage.getItem('pendingSync');
-        if (pendingData && this.isAuthenticated && this.sheetId) {
+        const pendingChanges = localStorage.getItem('pendingChanges');
+        if (pendingChanges && this.isAuthenticated && this.sheetId && navigator.onLine) {
             try {
-                await this.syncToSheetsWithRetry();
-                localStorage.removeItem('pendingSync');
+                console.log('Attempting to sync pending changes...');
+                await this.mergeLocalPendingChanges();
                 this.showMessage('✅ Pending changes synced successfully!', 'success');
+                this.updateSyncStatus('success');
             } catch (error) {
                 console.error('Failed to sync pending changes:', error);
+                this.updateSyncStatus('failed', 'Retry pending sync');
             }
         }
     }
@@ -398,9 +515,7 @@ class TodoApp {
         this.renderTasks();
         this.updateMetrics();
         
-        if (this.isAuthenticated && this.sheetId) {
-            this.syncToSheets();
-        }
+        // saveTasks() will handle the sync automatically
     }
 
     updateMetrics() {
@@ -440,8 +555,21 @@ class TodoApp {
         }
     }
 
-    saveTasks() {
+    saveTasks(skipSync = false) {
         localStorage.setItem('tasks', JSON.stringify(this.tasks));
+        
+        // Trigger immediate sync if authenticated (unless explicitly skipped)
+        if (!skipSync && this.isAuthenticated && this.sheetId && navigator.onLine) {
+            // Debounce sync to avoid too many API calls
+            if (this.syncDebounceTimer) {
+                clearTimeout(this.syncDebounceTimer);
+            }
+            this.syncDebounceTimer = setTimeout(() => {
+                this.syncToSheets().catch(error => {
+                    console.error('Background sync error:', error);
+                });
+            }, 500); // Wait 500ms to batch multiple changes
+        }
     }
 
     loadHistory() {
@@ -1529,6 +1657,192 @@ class TodoApp {
             console.error('❌ Force sync error:', error);
             this.showMessage('❌ Force sync failed. Check console and try re-login.', 'error');
         }
+    }
+
+    showLoadingOverlay(show) {
+        let overlay = document.getElementById('loading-overlay');
+        
+        if (show) {
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'loading-overlay';
+                overlay.innerHTML = `
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Syncing with Google Sheets...</div>
+                    </div>
+                `;
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.7);
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+        } else {
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+    }
+
+    async loadFromSheets() {
+        try {
+            console.log('Loading all data from Google Sheets...');
+            
+            // Load tasks from sheet
+            await this.loadTasksFromSheetData();
+            
+            // Load expenses
+            if (window.expenseManager) {
+                await window.expenseManager.loadFromGoogleSheets();
+            }
+            
+            // Load meals
+            if (window.mealTracker) {
+                await window.mealTracker.loadFromGoogleSheets();
+            }
+            
+            // Load notes from sheet
+            await this.loadNotesFromSheetData();
+            
+            console.log('✅ Successfully loaded all data from Google Sheets');
+            this.lastSyncTime = new Date();
+            
+        } catch (error) {
+            console.error('Error loading from sheets:', error);
+            throw error;
+        }
+    }
+
+    async loadTasksFromSheetData() {
+        try {
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: this.sheetId,
+                range: 'Tasks!A2:E1000'
+            });
+            
+            const rows = response.result.values || [];
+            const loadedTasks = [];
+            
+            rows.forEach(row => {
+                if (row[0]) { // If ID exists
+                    loadedTasks.push({
+                        id: row[0],
+                        text: row[1] || '',
+                        priority: row[2] || 'medium',
+                        completed: row[3] === 'TRUE' || row[3] === 'true',
+                        date: row[4] || this.currentDate.toISOString().split('T')[0]
+                    });
+                }
+            });
+            
+            // Replace local tasks with cloud data
+            this.tasks = loadedTasks;
+            this.saveTasks(true); // Skip sync since we just loaded from cloud
+            console.log(`Loaded ${loadedTasks.length} tasks from sheet`);
+            
+        } catch (error) {
+            console.error('Error loading tasks from sheet:', error);
+            throw error;
+        }
+    }
+
+    async loadNotesFromSheetData() {
+        try {
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: this.sheetId,
+                range: 'Notes!A2:D1000'
+            });
+            
+            const rows = response.result.values || [];
+            const notes = [];
+            
+            rows.forEach(row => {
+                if (row[0]) { // If ID exists
+                    notes.push({
+                        id: row[0],
+                        content: row[1] || '',
+                        date: row[2] || '',
+                        category: row[3] || 'general'
+                    });
+                }
+            });
+            
+            // Store notes locally
+            localStorage.setItem('notes', JSON.stringify(notes));
+            console.log(`Loaded ${notes.length} notes from sheet`);
+            
+        } catch (error) {
+            console.error('Error loading notes from sheet:', error);
+        }
+    }
+
+    async mergeLocalPendingChanges() {
+        try {
+            // Get any pending local changes (tasks created while offline)
+            const pendingChanges = JSON.parse(localStorage.getItem('pendingChanges') || '[]');
+            
+            if (pendingChanges.length > 0) {
+                console.log(`Merging ${pendingChanges.length} pending local changes...`);
+                
+                for (const change of pendingChanges) {
+                    switch (change.type) {
+                        case 'task':
+                            // Add task if it doesn't exist
+                            if (!this.tasks.find(t => t.id === change.data.id)) {
+                                this.tasks.push(change.data);
+                            }
+                            break;
+                        case 'expense':
+                            if (window.expenseManager) {
+                                window.expenseManager.addPendingExpense(change.data);
+                            }
+                            break;
+                        case 'meal':
+                            if (window.mealTracker) {
+                                window.mealTracker.addPendingMeal(change.data);
+                            }
+                            break;
+                    }
+                }
+                
+                // Clear pending changes after merge
+                localStorage.removeItem('pendingChanges');
+                
+                // Sync merged data back to sheets
+                await this.syncToSheets();
+            }
+        } catch (error) {
+            console.error('Error merging local changes:', error);
+        }
+    }
+
+    startAutoSync() {
+        // Clear any existing auto-sync interval
+        if (this.autoSyncInterval) {
+            clearInterval(this.autoSyncInterval);
+        }
+        
+        // Start auto-sync every 30 seconds
+        this.autoSyncInterval = setInterval(async () => {
+            if (this.isAuthenticated && this.sheetId && navigator.onLine) {
+                try {
+                    await this.syncToSheets();
+                    console.log('Auto-sync completed');
+                } catch (error) {
+                    console.error('Auto-sync error:', error);
+                }
+            }
+        }, 30000); // 30 seconds
     }
 
     showMessage(message, type) {

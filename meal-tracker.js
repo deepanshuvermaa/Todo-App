@@ -640,9 +640,22 @@ class MealTracker {
         }
     }
 
-    saveMeals() {
+    saveMeals(skipSync = false) {
         const today = new Date().toISOString().split('T')[0];
         localStorage.setItem(`meals_${today}`, JSON.stringify(this.meals));
+        
+        // Trigger immediate sync if authenticated (unless explicitly skipped)
+        if (!skipSync && window.todoApp && window.todoApp.isAuthenticated && window.todoApp.sheetId && navigator.onLine) {
+            // Debounce sync to avoid too many API calls
+            if (this.syncDebounceTimer) {
+                clearTimeout(this.syncDebounceTimer);
+            }
+            this.syncDebounceTimer = setTimeout(() => {
+                window.todoApp.syncMealsToSheet().catch(error => {
+                    console.error('Background meal sync error:', error);
+                });
+            }, 500); // Wait 500ms to batch multiple changes
+        }
     }
 
     loadTodaysMeals() {
@@ -697,6 +710,66 @@ class MealTracker {
             } catch (error) {
                 console.error('Failed to sync meals to sheets:', error);
             }
+        }
+    }
+    
+    async loadFromGoogleSheets() {
+        try {
+            if (!window.todoApp || !window.todoApp.isAuthenticated || !window.todoApp.sheetId || !gapi || !gapi.client) {
+                console.log('Google Sheets not available for meal loading');
+                return;
+            }
+            
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: window.todoApp.sheetId,
+                range: 'Meals!A2:H1000'
+            });
+            
+            const rows = response.result.values || [];
+            const loadedMeals = [];
+            
+            rows.forEach(row => {
+                if (row[0]) { // If ID exists
+                    loadedMeals.push({
+                        id: row[0],
+                        mealType: row[1] || 'breakfast',
+                        foodItem: row[2] || '',
+                        quantity: parseFloat(row[3]) || 0,
+                        unit: row[4] || 'g',
+                        calories: parseFloat(row[5]) || 0,
+                        date: row[6] || new Date().toISOString().split('T')[0],
+                        nutrition: {
+                            calories: parseFloat(row[5]) || 0,
+                            protein: parseFloat(row[7]) || 0,
+                            carbs: 0,
+                            fats: 0,
+                            fiber: 0
+                        }
+                    });
+                }
+            });
+            
+            // Replace local meals with cloud data
+            const today = new Date().toISOString().split('T')[0];
+            this.meals = loadedMeals.filter(meal => meal.date === today);
+            this.saveMeals(true); // Skip sync since we just loaded from cloud
+            this.refreshDisplay();
+            this.updateNutritionSummary();
+            console.log(`Loaded ${this.meals.length} meals from sheet for today`);
+            
+        } catch (error) {
+            console.error('Error loading meals from sheet:', error);
+            // Don't throw - allow app to continue with local data
+        }
+    }
+    
+    addPendingMeal(meal) {
+        // Add meal if it doesn't already exist
+        if (!this.meals.find(m => m.id === meal.id)) {
+            this.meals.push(meal);
+            this.saveMeals(true); // Skip sync for pending changes
+            this.refreshDisplay();
+            this.updateNutritionSummary();
         }
     }
 

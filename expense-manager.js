@@ -153,6 +153,57 @@ class ExpenseManager {
             });
         }
     }
+    
+    async loadFromGoogleSheets() {
+        try {
+            if (!window.todoApp || !window.todoApp.isAuthenticated || !window.todoApp.sheetId || !gapi || !gapi.client) {
+                console.log('Google Sheets not available for expense loading');
+                return;
+            }
+            
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: window.todoApp.sheetId,
+                range: 'Expenses!A2:F1000'
+            });
+            
+            const rows = response.result.values || [];
+            const loadedExpenses = [];
+            
+            rows.forEach(row => {
+                if (row[0]) { // If ID exists
+                    loadedExpenses.push({
+                        id: parseInt(row[0]),
+                        amount: parseFloat(row[1]) || 0,
+                        category: row[2] || 'other',
+                        description: row[3] || '',
+                        date: row[4] || new Date().toISOString().split('T')[0],
+                        timestamp: row[5] || row[0]
+                    });
+                }
+            });
+            
+            // Replace local expenses with cloud data
+            this.expenses = loadedExpenses;
+            this.saveExpenses(true); // Skip sync since we just loaded from cloud
+            this.renderExpenses();
+            this.updateAnalytics();
+            console.log(`Loaded ${loadedExpenses.length} expenses from sheet`);
+            
+        } catch (error) {
+            console.error('Error loading expenses from sheet:', error);
+            // Don't throw - allow app to continue with local data
+        }
+    }
+    
+    addPendingExpense(expense) {
+        // Add expense if it doesn't already exist
+        if (!this.expenses.find(e => e.id === expense.id)) {
+            this.expenses.push(expense);
+            this.saveExpenses(true); // Skip sync for pending changes
+            this.renderExpenses();
+            this.updateAnalytics();
+        }
+    }
 
     autoGenerateTags(category, description) {
         const tags = [];
@@ -817,8 +868,21 @@ class ExpenseManager {
         }
     }
 
-    saveExpenses() {
+    saveExpenses(skipSync = false) {
         localStorage.setItem('expenses', JSON.stringify(this.expenses));
+        
+        // Trigger immediate sync if authenticated (unless explicitly skipped)
+        if (!skipSync && window.todoApp && window.todoApp.isAuthenticated && window.todoApp.sheetId && navigator.onLine) {
+            // Debounce sync to avoid too many API calls
+            if (this.syncDebounceTimer) {
+                clearTimeout(this.syncDebounceTimer);
+            }
+            this.syncDebounceTimer = setTimeout(() => {
+                window.todoApp.syncExpensesToSheet().catch(error => {
+                    console.error('Background expense sync error:', error);
+                });
+            }, 500); // Wait 500ms to batch multiple changes
+        }
     }
 
     loadExpenses() {
