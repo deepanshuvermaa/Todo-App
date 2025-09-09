@@ -3317,7 +3317,6 @@ body.dark-mode .note-tags-input {
     .view {
         padding: 10px;
         min-height: calc(100vh - 120px);
-        background: #E8F4FD; /* Light blue background for content area */
     }
 
     /* Header */
