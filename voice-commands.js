@@ -277,28 +277,45 @@ class VoiceCommands {
     createVoiceUI() {
         if (!this.isSupported) return;
 
-        // Voice button already exists in smart-dashboard.js, don't add duplicate
-
-        // Add floating voice button
-        if (!document.getElementById('floating-voice-btn')) {
-            const floatingBtn = document.createElement('div');
-            floatingBtn.id = 'floating-voice-btn';
-            floatingBtn.className = 'floating-voice-btn';
-            floatingBtn.innerHTML = `
-                <button class="voice-fab" onclick="window.voiceCommands.toggleListening()">
-                    <span class="voice-icon">🎤</span>
-                </button>
-                <div class="voice-indicator" id="voice-indicator" style="display: none;">
-                    <div class="voice-animation">
-                        <div class="voice-wave"></div>
-                        <div class="voice-wave"></div>
-                        <div class="voice-wave"></div>
-                    </div>
-                    <div class="voice-text" id="voice-text">Tap to speak</div>
-                </div>
-            `;
-            document.body.appendChild(floatingBtn);
+        // Remove any existing floating button first
+        const existingBtn = document.getElementById('floating-voice-btn');
+        if (existingBtn) {
+            existingBtn.remove();
         }
+
+        // Add persistent floating voice button
+        const floatingBtn = document.createElement('div');
+        floatingBtn.id = 'floating-voice-btn';
+        floatingBtn.className = 'floating-voice-btn';
+        floatingBtn.innerHTML = `
+            <button class="voice-fab" id="voice-fab-btn" aria-label="Voice Commands">
+                <span class="voice-icon" id="voice-icon">🎤</span>
+                <span class="voice-pulse"></span>
+            </button>
+            <div class="voice-tooltip">Click to speak</div>
+            <div class="voice-listening-indicator" id="voice-listening-indicator" style="display: none;">
+                <div class="voice-wave-container">
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                </div>
+                <div class="voice-text" id="voice-text">Listening...</div>
+            </div>
+        `;
+        
+        // Add styles for the floating button
+        floatingBtn.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        `;
+        
+        document.body.appendChild(floatingBtn);
+        
+        // Add click handler
+        const fabBtn = document.getElementById('voice-fab-btn');
+        fabBtn.addEventListener('click', () => this.toggleListening());
 
         // Add voice commands help
         this.createVoiceHelp();
@@ -760,13 +777,35 @@ class VoiceCommands {
 
     updateVoiceUI() {
         // Update floating button
-        const voiceBtn = document.querySelector('.voice-fab');
-        const quickActionBtn = document.getElementById('voice-action-btn');
+        const voiceBtn = document.getElementById('voice-fab-btn');
+        const voiceIcon = document.getElementById('voice-icon');
+        const listeningIndicator = document.getElementById('voice-listening-indicator');
+        const tooltip = document.querySelector('.voice-tooltip');
         
-        if (voiceBtn) {
-            voiceBtn.classList.toggle('listening', this.isListening);
+        if (voiceBtn && voiceIcon) {
+            if (this.isListening) {
+                voiceBtn.classList.add('listening');
+                voiceIcon.textContent = '🔴';
+                if (listeningIndicator) {
+                    listeningIndicator.style.display = 'block';
+                }
+                if (tooltip) {
+                    tooltip.style.display = 'none';
+                }
+            } else {
+                voiceBtn.classList.remove('listening');
+                voiceIcon.textContent = '🎤';
+                if (listeningIndicator) {
+                    listeningIndicator.style.display = 'none';
+                }
+                if (tooltip) {
+                    tooltip.style.display = 'block';
+                }
+            }
         }
         
+        // Also update any quick action buttons
+        const quickActionBtn = document.getElementById('voice-action-btn');
         if (quickActionBtn) {
             quickActionBtn.classList.toggle('listening', this.isListening);
         }
@@ -865,7 +904,7 @@ class VoiceCommands {
     }
 
     showVoiceIndicator(text) {
-        const indicator = document.getElementById('voice-indicator');
+        const indicator = document.getElementById('voice-listening-indicator');
         const textEl = document.getElementById('voice-text');
         
         if (indicator && textEl) {
@@ -875,7 +914,7 @@ class VoiceCommands {
     }
 
     hideVoiceIndicator() {
-        const indicator = document.getElementById('voice-indicator');
+        const indicator = document.getElementById('voice-listening-indicator');
         if (indicator) {
             indicator.style.display = 'none';
         }
