@@ -178,59 +178,93 @@ class VoiceCommands {
                 description: 'Log water intake'
             },
 
-            // Navigation
+            // Enhanced Navigation
             {
                 patterns: [
-                    /(go to|show|open) dashboard/i,
-                    /show dashboard/i
+                    /(go to|show|open|navigate to) dashboard/i,
+                    /show dashboard/i,
+                    /home/i,
+                    /main screen/i
                 ],
                 action: () => this.navigateTo('dashboard'),
                 description: 'Go to dashboard'
             },
             {
                 patterns: [
-                    /(go to|show|open) tasks?/i,
-                    /(go to|show|open) today/i
+                    /(go to|show|open|navigate to) tasks?/i,
+                    /(go to|show|open|navigate to) today/i,
+                    /task (view|screen|page)/i
                 ],
                 action: () => this.navigateTo('today'),
                 description: 'Go to tasks'
             },
             {
                 patterns: [
-                    /(go to|show|open) expenses?/i,
-                    /(go to|show|open) budget/i
+                    /(go to|show|open|navigate to) expenses?/i,
+                    /(go to|show|open|navigate to) budget/i,
+                    /(go to|show|open|navigate to) finance/i,
+                    /expense (view|screen|page)/i,
+                    /money/i
                 ],
                 action: () => this.navigateTo('expenses'),
                 description: 'Go to expenses'
             },
             {
                 patterns: [
-                    /(go to|show|open) meals?/i,
-                    /(go to|show|open) food/i
+                    /(go to|show|open|navigate to) meals?/i,
+                    /(go to|show|open|navigate to) food/i,
+                    /(go to|show|open|navigate to) nutrition/i,
+                    /meal (view|screen|page)/i,
+                    /(go to|show|open|navigate to) diet/i
                 ],
                 action: () => this.navigateTo('meals'),
                 description: 'Go to meals'
             },
             {
                 patterns: [
-                    /(go to|show|open) habits?/i
+                    /(go to|show|open|navigate to) habits?/i,
+                    /habit (view|screen|page)/i,
+                    /(go to|show|open|navigate to) streaks?/i
                 ],
                 action: () => this.navigateTo('habits'),
                 description: 'Go to habits'
             },
             {
                 patterns: [
-                    /(go to|show|open) notes?/i
+                    /(go to|show|open|navigate to) notes?/i,
+                    /note (view|screen|page)/i,
+                    /(go to|show|open|navigate to) notebook/i,
+                    /writing/i
                 ],
                 action: () => this.navigateTo('notes'),
                 description: 'Go to notes'
             },
+            {
+                patterns: [
+                    /(go to|show|open|navigate to) settings?/i,
+                    /setting (view|screen|page)/i,
+                    /preferences/i,
+                    /configuration/i
+                ],
+                action: () => this.navigateTo('settings'),
+                description: 'Go to settings'
+            },
+            {
+                patterns: [
+                    /(go to|show|open|navigate to) history/i,
+                    /past (tasks|data)/i,
+                    /previous/i
+                ],
+                action: () => this.navigateTo('history'),
+                description: 'Go to history'
+            },
 
-            // Quick Actions
+            // Enhanced Quick Actions
             {
                 patterns: [
                     /(start|begin) pomodoro/i,
-                    /focus (time|timer)/i
+                    /focus (time|timer)/i,
+                    /study (time|mode)/i
                 ],
                 action: () => this.startPomodoro(),
                 description: 'Start pomodoro timer'
@@ -238,18 +272,81 @@ class VoiceCommands {
             {
                 patterns: [
                     /(set|create) reminder (.+)/i,
-                    /remind me (.+)/i
+                    /remind me (.+)/i,
+                    /reminder (.+)/i
                 ],
-                action: (match) => this.setReminder(match[2]),
+                action: (match) => this.setReminder(match[2] || match[1]),
                 description: 'Set a reminder'
             },
             {
                 patterns: [
                     /(what's |what is )(the |my )?time/i,
-                    /(what's |what is )(today's |the )?date/i
+                    /(what's |what is )(today's |the )?date/i,
+                    /current time/i,
+                    /tell me the time/i
                 ],
                 action: () => this.tellTime(),
                 description: 'Tell current time and date'
+            },
+            {
+                patterns: [
+                    /how many tasks (do i have|left|remaining)/i,
+                    /(show|tell me) task (summary|count)/i,
+                    /task status/i
+                ],
+                action: () => this.showTaskSummary(),
+                description: 'Show task summary'
+            },
+            {
+                patterns: [
+                    /(show|tell me) (my )?expense (summary|total)/i,
+                    /how much (did i spend|have i spent)/i,
+                    /expense report/i
+                ],
+                action: () => this.showExpenseSummary(),
+                description: 'Show expense summary'
+            },
+            {
+                patterns: [
+                    /(show|create|open) new note/i,
+                    /new note/i,
+                    /(start|begin) writing/i
+                ],
+                action: () => this.createNewNote(),
+                description: 'Create a new note'
+            },
+            {
+                patterns: [
+                    /(search|find) notes? (.+)/i,
+                    /find note (.+)/i
+                ],
+                action: (match) => this.searchNotes(match[2] || match[1]),
+                description: 'Search notes'
+            },
+            {
+                patterns: [
+                    /(clear|delete) all (completed|done) tasks/i,
+                    /clean up tasks/i
+                ],
+                action: () => this.clearCompletedTasks(),
+                description: 'Clear completed tasks'
+            },
+            {
+                patterns: [
+                    /(show|display) (today's |todays )?progress/i,
+                    /how am i doing/i,
+                    /(my )?daily summary/i
+                ],
+                action: () => this.showDailySummary(),
+                description: 'Show daily progress summary'
+            },
+            {
+                patterns: [
+                    /(sync|backup|save) data/i,
+                    /sync to (cloud|sheets)/i
+                ],
+                action: () => this.forceSyncAllData(),
+                description: 'Sync all data to cloud'
             },
 
             // Help
@@ -573,7 +670,8 @@ class VoiceCommands {
 
     navigateTo(tab) {
         if (window.todoApp) {
-            window.todoApp.switchToTab(tab);
+            window.todoApp.switchTab(tab);
+            this.showNotification(`Navigated to ${tab.charAt(0).toUpperCase() + tab.slice(1)}`, 'success');
         }
     }
 
@@ -1122,6 +1220,114 @@ class VoiceCommands {
             utterance.pitch = 1.0;
             utterance.volume = 0.8;
             speechSynthesis.speak(utterance);
+        }
+    }
+    
+    // New enhanced voice command methods
+    showTaskSummary() {
+        if (!window.todoApp) return;
+        
+        const tasks = window.todoApp.tasks || [];
+        const todayTasks = tasks.filter(task => 
+            task.date === new Date().toISOString().split('T')[0]
+        );
+        const completed = todayTasks.filter(t => t.completed).length;
+        const total = todayTasks.length;
+        const pending = total - completed;
+        
+        const message = `You have ${total} tasks today. ${completed} completed, ${pending} remaining.`;
+        this.showNotification(message, 'info');
+        this.speakFeedback(message);
+    }
+    
+    showExpenseSummary() {
+        if (!window.expenseManager) return;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const todayExpenses = window.expenseManager.expenses.filter(e => e.date === today);
+        const total = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+        
+        const message = `Today's expenses: ₹${total.toFixed(2)} across ${todayExpenses.length} transactions.`;
+        this.showNotification(message, 'info');
+        this.speakFeedback(message);
+    }
+    
+    createNewNote() {
+        this.navigateTo('notes');
+        setTimeout(() => {
+            const newNoteBtn = document.getElementById('new-note-btn');
+            if (newNoteBtn) {
+                newNoteBtn.click();
+                this.showNotification('Created new note', 'success');
+                this.speakFeedback('New note created. Start writing.');
+            }
+        }, 500);
+    }
+    
+    searchNotes(query) {
+        this.navigateTo('notes');
+        setTimeout(() => {
+            const searchInput = document.getElementById('notes-search-input');
+            if (searchInput) {
+                searchInput.value = query;
+                searchInput.dispatchEvent(new Event('input'));
+                this.showNotification(`Searching for: "${query}"`, 'info');
+                this.speakFeedback(`Searching notes for ${query}`);
+            }
+        }, 500);
+    }
+    
+    clearCompletedTasks() {
+        if (!window.todoApp) return;
+        
+        const initialCount = window.todoApp.tasks.length;
+        window.todoApp.tasks = window.todoApp.tasks.filter(task => !task.completed);
+        window.todoApp.saveTasks();
+        window.todoApp.renderTasks();
+        
+        const removedCount = initialCount - window.todoApp.tasks.length;
+        if (removedCount > 0) {
+            const message = `Cleared ${removedCount} completed tasks.`;
+            this.showNotification(message, 'success');
+            this.speakFeedback(message);
+        } else {
+            this.showNotification('No completed tasks to clear.', 'info');
+            this.speakFeedback('No completed tasks found');
+        }
+    }
+    
+    showDailySummary() {
+        if (!window.todoApp) return;
+        
+        // Calculate daily progress
+        const tasks = window.todoApp.tasks || [];
+        const todayTasks = tasks.filter(task => 
+            task.date === new Date().toISOString().split('T')[0]
+        );
+        const completed = todayTasks.filter(t => t.completed).length;
+        const total = todayTasks.length;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        // Get expense info
+        let expenseInfo = '';
+        if (window.expenseManager) {
+            const today = new Date().toISOString().split('T')[0];
+            const todayExpenses = window.expenseManager.expenses.filter(e => e.date === today);
+            const totalSpent = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+            expenseInfo = ` Spent ₹${totalSpent.toFixed(2)} today.`;
+        }
+        
+        const message = `Daily Progress: ${percentage}% complete. ${completed} of ${total} tasks done.${expenseInfo}`;
+        this.showNotification(message, 'info');
+        this.speakFeedback(message);
+    }
+    
+    forceSyncAllData() {
+        if (window.todoApp && window.todoApp.forceSyncAllData) {
+            window.todoApp.forceSyncAllData();
+            this.speakFeedback('Syncing all data to cloud');
+        } else {
+            this.showNotification('Sync not available - check settings', 'warning');
         }
     }
 }

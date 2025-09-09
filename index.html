@@ -1118,8 +1118,16 @@
 
             <div id="notes-view" class="view">
                 <div class="notes-app-container">
+                    <!-- Mobile Notes Toggle Button -->
+                    <button class="mobile-notes-toggle" onclick="toggleMobileNotes()" aria-label="View Notes List">
+                        📝 Notes
+                    </button>
+                    
                     <!-- Notes Sidebar -->
-                    <aside class="notes-sidebar">
+                    <aside class="notes-sidebar" id="notes-sidebar">
+                        <button class="mobile-notes-back" onclick="closeMobileNotes()" aria-label="Back to Editor">
+                            ← Back to Editor
+                        </button>
                         <div class="notes-sidebar-header">
                             <h3>My Notes</h3>
                             <button id="new-note-btn" class="new-note-btn" title="Create new note">

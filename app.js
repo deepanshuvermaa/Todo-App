@@ -1880,6 +1880,21 @@ class TodoApp {
     }
 }
 
+// Mobile Notes Functions
+function toggleMobileNotes() {
+    const sidebar = document.getElementById('notes-sidebar');
+    if (sidebar) {
+        sidebar.classList.add('mobile-open');
+    }
+}
+
+function closeMobileNotes() {
+    const sidebar = document.getElementById('notes-sidebar');
+    if (sidebar) {
+        sidebar.classList.remove('mobile-open');
+    }
+}
+
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.todoApp = new TodoApp();
