@@ -318,45 +318,29 @@ class MobileUIEnhancement {
     
     setupSmartHeader() {
         const header = document.querySelector('.header');
+        const navTabs = document.querySelector('.nav-tabs');
         if (!header) return;
         
-        let ticking = false;
-        
-        const handleScroll = () => {
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    
-                    if (scrollTop > this.lastScrollTop && scrollTop > 100) {
-                        // Scrolling down - hide header
-                        header.style.transform = 'translateY(-100%)';
-                    } else {
-                        // Scrolling up - show header
-                        header.style.transform = 'translateY(0)';
-                    }
-                    
-                    this.lastScrollTop = scrollTop;
-                    ticking = false;
-                });
-                
-                ticking = true;
+        // For mobile, just keep the header fixed without auto-hide
+        // This prevents the navbar from appearing in the middle of the screen
+        if (this.isMobile) {
+            header.style.position = 'fixed';
+            header.style.top = '0';
+            header.style.left = '0';
+            header.style.right = '0';
+            header.style.zIndex = '100';
+            header.style.transform = 'translateY(0)';
+            
+            // Hide desktop nav tabs on mobile
+            if (navTabs) {
+                navTabs.style.display = 'none';
             }
-        };
-        
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        
-        // Add smooth transition
-        header.style.transition = 'transform 0.3s ease';
-        header.style.position = 'fixed';
-        header.style.top = '0';
-        header.style.left = '0';
-        header.style.right = '0';
-        header.style.zIndex = '100';
-        
-        // Adjust main content padding
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-            mainContent.style.paddingTop = header.offsetHeight + 'px';
+            
+            // Adjust main content padding
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                mainContent.style.paddingTop = '60px'; // Fixed padding for header
+            }
         }
     }
     
@@ -393,7 +377,8 @@ class MobileUIEnhancement {
     }
     
     checkFirstVisit() {
-        if (!localStorage.getItem('onboarded')) {
+        // Only show onboarding once for first-time users
+        if (!localStorage.getItem('onboarded') && !localStorage.getItem('skipOnboarding')) {
             this.showOnboarding();
         }
     }

@@ -403,7 +403,7 @@ class VoiceCommands {
         // Add styles for the floating button
         floatingBtn.style.cssText = `
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             right: 20px;
             z-index: 9999;
         `;
