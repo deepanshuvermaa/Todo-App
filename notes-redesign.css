@@ -2,21 +2,21 @@
 
 /* Notes Container */
 #notes-view {
-    background: #fef3c7 !important; /* Soft yellow background */
+    background: #FFEF83 !important; /* Soft yellow background as specified */
     min-height: 100vh;
     padding: 0 !important;
 }
 
 /* Notes Sidebar */
 .notes-sidebar {
-    background: #fbbf24 !important; /* Darker yellow */
-    border-right: 2px solid #f59e0b !important;
+    background: #B1B1B1 !important; /* Gray sidebar as specified */
+    border-right: 2px solid #999 !important;
 }
 
 .notes-sidebar-header {
-    background: #f59e0b !important;
+    background: #999 !important;
     padding: 15px !important;
-    border-bottom: 2px solid #d97706 !important;
+    border-bottom: 2px solid #777 !important;
 }
 
 .notes-sidebar-header h3 {
@@ -25,9 +25,9 @@
 }
 
 .add-note-btn {
-    background: white !important;
-    color: #f59e0b !important;
-    border: 2px solid white !important;
+    background: #FFEF83 !important;
+    color: #333 !important;
+    border: 2px solid #FFEF83 !important;
     padding: 10px 16px !important;
     border-radius: 8px !important;
     font-weight: 600 !important;
@@ -35,7 +35,7 @@
 }
 
 .add-note-btn:hover {
-    background: #fef3c7 !important;
+    background: #FFE555 !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -47,7 +47,7 @@
 
 .note-item {
     background: white !important;
-    border: 2px solid #fed7aa !important;
+    border: 2px solid #ddd !important;
     border-radius: 8px !important;
     padding: 12px !important;
     margin-bottom: 10px !important;
@@ -56,54 +56,54 @@
 }
 
 .note-item:hover {
-    background: #fffbeb !important;
-    border-color: #fbbf24 !important;
+    background: #FFEF83 !important;
+    border-color: #ccc !important;
     transform: translateX(5px);
 }
 
 .note-item.active {
-    background: #fef3c7 !important;
-    border-color: #f59e0b !important;
+    background: #FFEF83 !important;
+    border-color: #999 !important;
     border-width: 3px !important;
 }
 
 /* Notes Editor */
 .notes-editor {
-    background: #fffbeb !important;
+    background: #FFEF83 !important;
     height: 100vh !important;
     display: flex !important;
     flex-direction: column !important;
 }
 
 .notes-editor-header {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    background: #FFE555 !important;
     padding: 15px 20px !important;
-    border-bottom: 3px solid #d97706 !important;
+    border-bottom: 2px solid #ddd !important;
 }
 
 .note-title-input {
-    background: rgba(255, 255, 255, 0.9) !important;
-    border: 2px solid #fed7aa !important;
+    background: white !important;
+    border: 2px solid #ddd !important;
     border-radius: 8px !important;
     padding: 10px 15px !important;
     font-size: 18px !important;
     font-weight: 600 !important;
-    color: #92400e !important;
+    color: #333 !important;
 }
 
 .note-title-input:focus {
     outline: none !important;
-    border-color: #f59e0b !important;
+    border-color: #999 !important;
     background: white !important;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+    box-shadow: 0 0 0 3px rgba(177, 177, 177, 0.2) !important;
 }
 
 /* Editor Toolbar - Complete Redesign for Desktop and Mobile */
 .notes-editor-toolbar,
 .notes-editor-actions {
-    background: #fef3c7 !important;
+    background: #FFEF83 !important;
     padding: 12px !important;
-    border-bottom: 2px solid #fed7aa !important;
+    border-bottom: 2px solid #ddd !important;
     display: flex !important;
     flex-wrap: wrap !important;
     gap: 8px !important;
@@ -141,8 +141,8 @@
 .format-btn,
 .note-action-btn {
     background: white !important;
-    border: 2px solid #fed7aa !important;
-    color: #92400e !important;
+    border: 1px solid #ddd !important;
+    color: #333 !important;
     padding: 8px 12px !important;
     border-radius: 6px !important;
     cursor: pointer !important;
@@ -158,18 +158,18 @@
 
 .format-btn:hover,
 .note-action-btn:hover {
-    background: #fbbf24 !important;
+    background: #B1B1B1 !important;
     color: white !important;
-    border-color: #f59e0b !important;
+    border-color: #999 !important;
     transform: translateY(-2px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
 .format-btn.active,
 .note-action-btn.active {
-    background: #f59e0b !important;
+    background: #999 !important;
     color: white !important;
-    border-color: #d97706 !important;
+    border-color: #777 !important;
 }
 
 /* Color Palette */
@@ -200,10 +200,10 @@
 .note-content {
     flex: 1 !important;
     padding: 20px !important;
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    background: #FFFCEE !important; /* Lighter yellow for content area */
     font-size: 16px !important;
     line-height: 1.8 !important;
-    color: #78350f !important;
+    color: #333 !important;
     overflow-y: auto !important;
     min-height: 400px !important;
 }
@@ -215,14 +215,23 @@
 
 /* Mobile Specific Styles */
 @media (max-width: 768px) {
-    /* Mobile Notes Toolbar - Perfect Alignment */
-    .notes-editor-toolbar,
+    /* Mobile Notes Toolbar - Perfect Grid Layout */
+    .notes-editor-toolbar {
+        display: grid !important;
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 5px !important;
+        padding: 10px !important;
+        background: #FFEF83 !important;
+        border-bottom: 1px solid #ddd !important;
+    }
+    
     .notes-editor-actions {
         display: grid !important;
         grid-template-columns: repeat(6, 1fr) !important;
-        gap: 6px !important;
+        gap: 5px !important;
         padding: 10px !important;
-        background: #fef3c7 !important;
+        background: #FFEF83 !important;
+        border-top: 1px solid #ddd !important;
     }
     
     .format-btn,
@@ -278,6 +287,24 @@
         height: auto !important;
     }
     
+    /* Fix notes position on mobile */
+    #notes-view {
+        padding-top: 0 !important;
+        background: #FFEF83 !important;
+    }
+    
+    .notes-editor {
+        height: calc(100vh - 60px) !important;
+        background: #FFEF83 !important;
+    }
+    
+    .notes-editor-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: #FFE555 !important;
+    }
+    
     /* Mobile toggle button */
     .mobile-notes-toggle {
         position: fixed !important;
@@ -285,7 +312,7 @@
         right: 20px !important;
         width: 56px !important;
         height: 56px !important;
-        background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+        background: #B1B1B1 !important;
         color: white !important;
         border: none !important;
         border-radius: 50% !important;
@@ -300,11 +327,11 @@
 
 /* Additional Visual Polish */
 .note-metadata {
-    background: #fed7aa !important;
+    background: #FFE555 !important;
     padding: 8px 15px !important;
     font-size: 12px !important;
-    color: #92400e !important;
-    border-bottom: 1px solid #fbbf24 !important;
+    color: #333 !important;
+    border-bottom: 1px solid #ddd !important;
 }
 
 .note-date {
