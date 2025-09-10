@@ -1,0 +1,401 @@
+/* Notes Section Complete Redesign - Yellow Theme */
+
+/* Notes Container */
+#notes-view {
+    background: #fef3c7 !important; /* Soft yellow background */
+    min-height: 100vh;
+    padding: 0 !important;
+}
+
+/* Notes Sidebar */
+.notes-sidebar {
+    background: #fbbf24 !important; /* Darker yellow */
+    border-right: 2px solid #f59e0b !important;
+}
+
+.notes-sidebar-header {
+    background: #f59e0b !important;
+    padding: 15px !important;
+    border-bottom: 2px solid #d97706 !important;
+}
+
+.notes-sidebar-header h3 {
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+.add-note-btn {
+    background: white !important;
+    color: #f59e0b !important;
+    border: 2px solid white !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s !important;
+}
+
+.add-note-btn:hover {
+    background: #fef3c7 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Notes List */
+.notes-list {
+    padding: 10px !important;
+}
+
+.note-item {
+    background: white !important;
+    border: 2px solid #fed7aa !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+.note-item:hover {
+    background: #fffbeb !important;
+    border-color: #fbbf24 !important;
+    transform: translateX(5px);
+}
+
+.note-item.active {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    border-width: 3px !important;
+}
+
+/* Notes Editor */
+.notes-editor {
+    background: #fffbeb !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.notes-editor-header {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+    padding: 15px 20px !important;
+    border-bottom: 3px solid #d97706 !important;
+}
+
+.note-title-input {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 2px solid #fed7aa !important;
+    border-radius: 8px !important;
+    padding: 10px 15px !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #92400e !important;
+}
+
+.note-title-input:focus {
+    outline: none !important;
+    border-color: #f59e0b !important;
+    background: white !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Editor Toolbar - Complete Redesign for Desktop and Mobile */
+.notes-editor-toolbar,
+.notes-editor-actions {
+    background: #fef3c7 !important;
+    padding: 12px !important;
+    border-bottom: 2px solid #fed7aa !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+}
+
+/* Desktop specific toolbar layout */
+@media (min-width: 769px) {
+    .notes-editor-toolbar {
+        padding: 15px !important;
+        gap: 10px !important;
+    }
+    
+    .format-btn,
+    .note-action-btn {
+        min-width: 44px !important;
+        height: 44px !important;
+        font-size: 18px !important;
+    }
+    
+    /* Group formatting buttons */
+    .format-group {
+        display: inline-flex !important;
+        gap: 4px !important;
+        padding: 0 8px !important;
+        border-right: 2px solid #fed7aa !important;
+    }
+    
+    .format-group:last-child {
+        border-right: none !important;
+    }
+}
+
+.format-btn,
+.note-action-btn {
+    background: white !important;
+    border: 2px solid #fed7aa !important;
+    color: #92400e !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 16px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+    margin: 0 !important;
+}
+
+.format-btn:hover,
+.note-action-btn:hover {
+    background: #fbbf24 !important;
+    color: white !important;
+    border-color: #f59e0b !important;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.format-btn.active,
+.note-action-btn.active {
+    background: #f59e0b !important;
+    color: white !important;
+    border-color: #d97706 !important;
+}
+
+/* Color Palette */
+.color-palette {
+    background: white !important;
+    border: 2px solid #fed7aa !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.color-option {
+    width: 28px !important;
+    height: 28px !important;
+    border: 2px solid #fed7aa !important;
+    border-radius: 4px !important;
+    margin: 2px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+.color-option:hover {
+    transform: scale(1.2);
+    border-color: #f59e0b !important;
+}
+
+/* Note Content Area */
+.note-content {
+    flex: 1 !important;
+    padding: 20px !important;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    font-size: 16px !important;
+    line-height: 1.8 !important;
+    color: #78350f !important;
+    overflow-y: auto !important;
+    min-height: 400px !important;
+}
+
+.note-content:focus {
+    outline: none !important;
+    background: white !important;
+}
+
+/* Mobile Specific Styles */
+@media (max-width: 768px) {
+    /* Mobile Notes Toolbar - Perfect Alignment */
+    .notes-editor-toolbar,
+    .notes-editor-actions {
+        display: grid !important;
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 6px !important;
+        padding: 10px !important;
+        background: #fef3c7 !important;
+    }
+    
+    .format-btn,
+    .note-action-btn {
+        width: 100% !important;
+        height: 42px !important;
+        padding: 0 !important;
+        font-size: 18px !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Group certain buttons */
+    .format-btn[title="Bold"] { grid-column: 1; }
+    .format-btn[title="Italic"] { grid-column: 2; }
+    .format-btn[title="Underline"] { grid-column: 3; }
+    .format-btn[title="Strike"] { grid-column: 4; }
+    .format-btn[title="Heading"] { grid-column: 5; }
+    .format-btn[title="Quote"] { grid-column: 6; }
+    
+    /* Second row */
+    .format-btn[title="Bullet List"] { grid-column: 1; grid-row: 2; }
+    .format-btn[title="Numbered List"] { grid-column: 2; grid-row: 2; }
+    .format-btn[title="Checkbox"] { grid-column: 3; grid-row: 2; }
+    .format-btn[title="Code"] { grid-column: 4; grid-row: 2; }
+    .format-btn[title="Link"] { grid-column: 5; grid-row: 2; }
+    .format-btn[title="Image"] { grid-column: 6; grid-row: 2; }
+    
+    /* Third row for actions */
+    .note-action-btn { 
+        grid-row: 3; 
+        grid-column: span 2;
+    }
+    
+    /* Color buttons span */
+    .color-buttons {
+        grid-column: span 3;
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+    }
+    
+    .notes-editor-header {
+        padding: 12px !important;
+    }
+    
+    .note-title-input {
+        font-size: 16px !important;
+        padding: 8px 12px !important;
+    }
+    
+    .notes-sidebar {
+        width: 100% !important;
+        height: auto !important;
+    }
+    
+    /* Mobile toggle button */
+    .mobile-notes-toggle {
+        position: fixed !important;
+        bottom: 80px !important;
+        right: 20px !important;
+        width: 56px !important;
+        height: 56px !important;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        font-size: 24px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+        z-index: 100 !important;
+    }
+}
+
+/* Additional Visual Polish */
+.note-metadata {
+    background: #fed7aa !important;
+    padding: 8px 15px !important;
+    font-size: 12px !important;
+    color: #92400e !important;
+    border-bottom: 1px solid #fbbf24 !important;
+}
+
+.note-date {
+    color: #92400e !important;
+    opacity: 0.8;
+}
+
+.note-char-count {
+    color: #92400e !important;
+    font-weight: 600;
+}
+
+/* Empty State */
+.empty-notes-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px;
+    text-align: center;
+}
+
+.empty-notes-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-notes-title {
+    font-size: 24px;
+    color: #92400e;
+    margin-bottom: 10px;
+}
+
+.empty-notes-text {
+    color: #92400e;
+    opacity: 0.7;
+}
+
+/* Scrollbar Styling */
+.notes-editor::-webkit-scrollbar,
+.note-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notes-editor::-webkit-scrollbar-track,
+.note-content::-webkit-scrollbar-track {
+    background: #fed7aa;
+    border-radius: 4px;
+}
+
+.notes-editor::-webkit-scrollbar-thumb,
+.note-content::-webkit-scrollbar-thumb {
+    background: #f59e0b;
+    border-radius: 4px;
+}
+
+.notes-editor::-webkit-scrollbar-thumb:hover,
+.note-content::-webkit-scrollbar-thumb:hover {
+    background: #d97706;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode #notes-view {
+    background: #1f2937 !important;
+}
+
+body.dark-mode .notes-sidebar {
+    background: #111827 !important;
+    border-right-color: #374151 !important;
+}
+
+body.dark-mode .notes-editor {
+    background: #1f2937 !important;
+}
+
+body.dark-mode .note-content {
+    background: #111827 !important;
+    color: #e5e7eb !important;
+}
+
+/* But keep yellow accents even in dark mode */
+body.dark-mode .add-note-btn {
+    background: #fbbf24 !important;
+    color: #111827 !important;
+    border-color: #fbbf24 !important;
+}
+
+body.dark-mode .format-btn:hover,
+body.dark-mode .note-action-btn:hover {
+    background: #fbbf24 !important;
+    color: #111827 !important;
+}
