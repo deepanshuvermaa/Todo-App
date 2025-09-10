@@ -119,12 +119,14 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
     z-index: 2001;
-    width: 320px;
+    width: 340px;
     max-width: 90vw;
     background: white;
     border-radius: 20px;
@@ -136,16 +138,13 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 90px;
-    height: 90px;
+    width: 95px;
+    height: 95px;
     background: #f8f9fa;
     border: 2px solid #e9ecef;
     border-radius: 16px;
     cursor: pointer;
-    transform: scale(0);
-    opacity: 0;
-    transition: all 0.3s ease;
-    animation: popIn 0.3s ease forwards;
+    transition: all 0.2s ease;
 }
 
 .quick-add-item .quick-add-icon {
@@ -171,12 +170,6 @@
     }
 }
 
-@keyframes popIn {
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
 
 .quick-add-close {
     position: fixed;
@@ -486,35 +479,35 @@
     background: #0056b3;
 }
 
-/* Notes editor toolbar fix - complete redesign */
+/* Notes editor toolbar - clean 6 per row layout */
 @media (max-width: 768px) {
     .notes-editor-toolbar,
     .editor-toolbar,
     .notes-editor-actions {
-        display: grid !important;
-        grid-template-columns: repeat(6, 1fr) !important;
-        gap: 4px !important;
-        padding: 8px !important;
-        background: #f8f9fa !important;
-        border-radius: 0 !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 10px !important;
+        background: white !important;
+        border-bottom: 1px solid #e9ecef !important;
         margin: 0 !important;
     }
     
     .format-btn,
     .editor-btn,
     .note-action-btn {
-        width: 100% !important;
+        width: calc(16.666% - 5px) !important; /* 6 per row */
         min-width: unset !important;
-        height: 40px !important;
+        height: 42px !important;
         padding: 0 !important;
         margin: 0 !important;
-        background: white !important;
+        background: #f8f9fa !important;
         border: 1px solid #dee2e6 !important;
         border-radius: 8px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 16px !important;
+        font-size: 18px !important;
         cursor: pointer !important;
     }
     
@@ -523,13 +516,6 @@
         background: #007BFF !important;
         color: white !important;
         transform: scale(0.95);
-    }
-    
-    /* Color palette specific fixes */
-    .color-palette {
-        position: absolute !important;
-        grid-column: span 3 !important;
-        margin-top: 5px !important;
     }
 }
 
@@ -595,13 +581,13 @@
         display: none !important;
     }
     
-    /* Fix header positioning */
+    /* Simple header - no sticky */
     .header {
-        position: sticky !important;
-        top: 0 !important;
+        position: relative !important;
         z-index: 100 !important;
         background: white !important;
         margin-bottom: 0 !important;
+        border-bottom: 1px solid #e9ecef !important;
     }
     
     /* Adjust main content for bottom nav */
