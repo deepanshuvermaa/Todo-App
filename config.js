@@ -4,15 +4,15 @@
 const CONFIG = {
     // Google OAuth2 Configuration
     GOOGLE_CLIENT_ID: '995916217406-3o8864q7ikdgjsrqr95qhgg0k25kuub7.apps.googleusercontent.com',
-    GOOGLE_API_KEY: 'AIzaSyDcNSfA1rOQxCZ9Drm7vYosb4ewPZyzBpo',
+    GOOGLE_API_KEY: 'AIzaSyDcNSfA1rOQxCZ9Drm7vYosb4ewPZyzBpo', // Replace this after you create the API key
     
-    // Google Sheets API Configuration  
+    // Google Sheets API Configuration
     DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-    SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly',
+    SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
     
     // App Configuration
-    APP_NAME: 'lifeTracker',
-    SHEET_NAME: 'lifeTracker Data',
+    APP_NAME: 'Beginner Todo App',
+    SHEET_NAME: 'Todo App Data',
     
     // Optional: Google Apps Script Web App URL (if using server-side functions)
     APPS_SCRIPT_URL: '' // Leave empty if not using Apps Script backend

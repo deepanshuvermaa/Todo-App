@@ -1,0 +1,235 @@
+/* EXACT VISUAL COPY FROM YOUR SCREENSHOT */
+
+@media (max-width: 768px) {
+    /* Hide streak container */
+    .streak-container {
+        display: none !important;
+    }
+    
+    /* Main container with yellow background and padding */
+    #notes-view {
+        background: #FFEF83 !important;
+        padding: 12px !important;
+        margin: 0 !important;
+        min-height: 100vh !important;
+    }
+    
+    .notes-app-container {
+        background: transparent !important;
+        padding: 0 !important;
+    }
+    
+    .notes-editor-container {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .notes-editor-header {
+        background: transparent !important;
+        padding: 0 !important;
+        border: none !important;
+        margin-bottom: 12px !important;
+    }
+    
+    /* Title input - white rectangle at top */
+    #note-title,
+    .note-title-input {
+        background: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 10px 12px !important;
+        width: 100% !important;
+        font-size: 16px !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+    
+    /* TOOLBAR - 6 columns with proper gaps */
+    .formatting-toolbar {
+        display: grid !important;
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 8px !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        margin: 12px 0 !important;
+        width: 100% !important;
+    }
+    
+    /* Hide separators */
+    .format-separator {
+        display: none !important;
+    }
+    
+    /* FORMAT BUTTONS - Rectangle shape like in image */
+    .format-btn {
+        all: unset !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 42px !important;
+        background: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        cursor: pointer !important;
+        box-sizing: border-box !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Button icons */
+    .format-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+        color: #333 !important;
+        fill: currentColor !important;
+    }
+    
+    /* Active/pressed state */
+    .format-btn:active {
+        background: #f0f0f0 !important;
+        transform: scale(0.98) !important;
+    }
+    
+    /* The two black buttons visible in your image */
+    /* Checkbox button (position 9) */
+    .format-btn[data-format="checklist"],
+    .format-btn[title="Checklist"],
+    .formatting-toolbar .format-btn:nth-child(9) {
+        background: #333 !important;
+    }
+    
+    .format-btn[data-format="checklist"] svg,
+    .format-btn[title="Checklist"] svg,
+    .formatting-toolbar .format-btn:nth-child(9) svg {
+        color: #0d0d0d !important;
+    }
+    
+    /* Another black button (appears to be position 12) */
+    .format-btn[data-format="image"],
+    .format-btn[title="Insert Image"],
+    .formatting-toolbar .format-btn:nth-child(12) {
+        background: #333 !important;
+    }
+    
+    .format-btn[data-format="image"] svg,
+    .format-btn[title="Insert Image"] svg,
+    .formatting-toolbar .format-btn:nth-child(12) svg {
+        color: #0d0d0d  !important;
+    }
+    
+    /* Notes actions buttons if present */
+    .notes-editor-actions {
+       
+        padding: 0 !important;
+        background: transparent !important;
+        margin: 12px 0 !important;
+    }
+    
+    .note-action-btn {
+        all: unset !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 42px !important;
+        background: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+        color: #333 !important;
+        cursor: pointer !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Editor wrapper - the white content area */
+    .notes-editor-wrapper {
+        background: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: 450px !important;
+    }
+    
+    /* Editor content */
+    .notes-editor,
+    #note-content {
+        background: transparent !important;
+        min-height: 450px !important;
+        padding: 12px !important;
+        border: none !important;
+        font-size: 16px !important;
+        color: #333 !important;
+        line-height: 1.6 !important;
+    }
+    
+    .notes-editor:focus {
+        outline: none !important;
+    }
+    
+    /* Footer */
+    .notes-editor-footer {
+        display: none !important;
+    }
+    
+    /* Sidebar styling */
+    .notes-sidebar {
+        background: #f5f5f5 !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: -100% !important;
+        width: 85% !important;
+        max-width: 320px !important;
+        height: 100vh !important;
+        z-index: 1100 !important;
+        transition: left 0.3s ease !important;
+    }
+    
+    .notes-sidebar.mobile-open {
+        left: 0 !important;
+    }
+    
+    /* Mobile menu button */
+    .notes-mobile-menu-btn {
+        position: fixed !important;
+        top: 70px !important;
+        left: 12px !important;
+        z-index: 1050 !important;
+        background: white !important;
+        color: #333 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        width: 40px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 20px !important;
+    }
+    
+    /* Hide floating elements */
+    .mobile-notes-toggle,
+    .toggle-notes-sidebar,
+    button[aria-label="View Notes List"] {
+        display: none !important;
+    }
+}
+
+/* Force overrides */
+@media (max-width: 768px) {
+    #notes-view .formatting-toolbar {
+        display: grid !important;
+        grid-template-columns: repeat(6, 1fr) !important;
+        gap: 8px !important;
+    }
+    
+    #notes-view .formatting-toolbar .format-btn {
+        width: 100% !important;
+        height: 42px !important;
+        background: white !important;
+        border-radius: 6px !important;
+    }
+}

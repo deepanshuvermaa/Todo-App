@@ -167,6 +167,18 @@ class MobileUIEnhancement {
                     <div class="quick-add-icon">🎯</div>
                     <span>Habit</span>
                 </button>
+                <button class="quick-add-item" data-action="screenshot">
+                    <div class="quick-add-icon">📸</div>
+                    <span>Screenshot</span>
+                </button>
+                <button class="quick-add-item" data-action="voice">
+                    <div class="quick-add-icon">🎙️</div>
+                    <span>Voice Note</span>
+                </button>
+                <button class="quick-add-item" data-action="link">
+                    <div class="quick-add-icon">🔗</div>
+                    <span>Link</span>
+                </button>
             </div>
             <button class="quick-add-close">×</button>
         `;
@@ -222,6 +234,18 @@ class MobileUIEnhancement {
                     <button class="more-menu-item" data-view="bucket-list">
                         <span class="more-item-icon">🪣</span>
                         <span>Bucket List</span>
+                    </button>
+                    <button class="more-menu-item" data-view="embeddings">
+                        <span class="more-item-icon">🔗</span>
+                        <span>Links</span>
+                    </button>
+                    <button class="more-menu-item" data-view="screenshots">
+                        <span class="more-item-icon">📸</span>
+                        <span>Screenshots</span>
+                    </button>
+                    <button class="more-menu-item" data-view="voice-notes">
+                        <span class="more-item-icon">🎙️</span>
+                        <span>Voice Notes</span>
                     </button>
                     <button class="more-menu-item" data-view="history">
                         <span class="more-item-icon">📊</span>
@@ -540,6 +564,27 @@ class MobileUIEnhancement {
                 break;
             case 'habit':
                 this.switchView('habits');
+                break;
+            case 'screenshot':
+                this.switchView('screenshots');
+                setTimeout(() => {
+                    const btn = document.querySelector('.upload-screenshot-btn');
+                    if (btn) btn.click();
+                }, 300);
+                break;
+            case 'voice':
+                this.switchView('voice-notes');
+                setTimeout(() => {
+                    const btn = document.querySelector('.new-recording-btn');
+                    if (btn) btn.click();
+                }, 300);
+                break;
+            case 'link':
+                this.switchView('embeddings');
+                setTimeout(() => {
+                    const btn = document.querySelector('.add-embedding-btn');
+                    if (btn) btn.click();
+                }, 300);
                 break;
         }
     }

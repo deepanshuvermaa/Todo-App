@@ -4,280 +4,12 @@
     box-sizing: border-box;
 }
 
-/* Loading overlay styles */
-.loading-content {
-    text-align: center;
-    color: white;
-}
-
-.loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 5px solid rgba(255, 255, 255, 0.3);
-    border-top: 5px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-}
-
-.loading-text {
-    font-size: 18px;
-    font-weight: 500;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Floating Voice Button Styles - Fixed to not create extra space */
-.floating-voice-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1500; /* Above content but below modals */
-    pointer-events: auto;
-}
-
-.voice-fab {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: #1a1a1a;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    outline: none;
-}
-
-.voice-fab:hover {
-    transform: scale(1.1);
-    background: #2a2a2a;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-}
-
-.voice-fab:active {
-    transform: scale(0.95);
-}
-
-.voice-fab.listening {
-    background: #dc3545;
-    animation: pulse 1.5s infinite;
-}
-
-.voice-pulse {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: inherit;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.voice-fab.listening .voice-pulse {
-    animation: voicePulse 1.5s infinite;
-}
-
-@keyframes voicePulse {
-    0% {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-    100% {
-        transform: scale(1.5);
-        opacity: 0;
-    }
-}
-
-.voice-tooltip {
-    position: absolute;
-    bottom: 70px;
-    right: 0;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-}
-
-.floating-voice-btn:hover .voice-tooltip {
-    opacity: 1;
-}
-
-.voice-listening-indicator {
-    position: absolute;
-    bottom: 70px;
-    right: -10px;
-    background: white;
-    border-radius: 12px;
-    padding: 12px 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 150px;
-}
-
-.voice-wave-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    margin-bottom: 8px;
-}
-
-.voice-wave {
-    width: 4px;
-    height: 20px;
-    background: #1a1a1a;
-    border-radius: 2px;
-    animation: voiceWave 0.6s infinite ease-in-out;
-}
-
-.voice-wave:nth-child(2) {
-    animation-delay: 0.1s;
-}
-
-.voice-wave:nth-child(3) {
-    animation-delay: 0.2s;
-}
-
-@keyframes voiceWave {
-    0%, 100% {
-        transform: scaleY(0.5);
-    }
-    50% {
-        transform: scaleY(1);
-    }
-}
-
-.voice-text {
-    text-align: center;
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-    .floating-voice-btn {
-        bottom: 20px;  /* Keep at bottom, over content */
-        right: 15px;
-        position: fixed !important;
-        z-index: 1500;  /* Above content */
-    }
-    
-    .voice-fab {
-        width: 48px;  /* Slightly smaller */
-        height: 48px;
-        font-size: 20px;
-        /* Add shadow for better visibility */
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    }
-    
-    .voice-tooltip {
-        bottom: 60px;
-        font-size: 11px;
-        /* Hide tooltip on mobile to save space */
-        display: none !important;
-    }
-    
-    .voice-listening-indicator {
-        bottom: 60px;
-        right: -5px;
-        min-width: 120px;
-        padding: 10px 12px;
-    }
-    
-    .voice-wave {
-        width: 3px;
-        height: 16px;
-    }
-}
-
-/* Extra small devices */
-@media (max-width: 480px) {
-    .floating-voice-btn {
-        bottom: 15px;
-        right: 15px;
-    }
-    
-    .voice-fab {
-        width: 45px;
-        height: 45px;
-        font-size: 20px;
-    }
-}
-
-/* Ensure button stays above all content */
-.floating-voice-btn {
-    pointer-events: auto;
-}
-
-/* Dark mode support */
-body.dark-mode .voice-listening-indicator {
-    background: #2a2a2a;
-    color: white;
-}
-
-body.dark-mode .voice-text {
-    color: #ccc;
-}
-
-body.dark-mode .voice-tooltip {
-    background: rgba(255, 255, 255, 0.9);
-    color: #333;
-}
-
-/* Notification close button styles */
-.notification-close,
-.message-close {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    margin-left: 10px;
-    flex-shrink: 0;
-    transition: background 0.2s;
-}
-
-.notification-close:hover,
-.message-close:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.notification-content,
-.message-content {
-    flex: 1;
-    word-wrap: break-word;
-}
-
 body {
     font-family: 'Inter', sans-serif;
     background-color: #FFFFFF;
     color: #333333;
     line-height: 1.5;
     min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .container {
@@ -298,119 +30,6 @@ body {
     align-items: center;
     margin-bottom: 20px;
     position: relative;
-}
-
-/* Sync Status Indicator */
-.sync-status {
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 12px;
-    background: #f0f0f0;
-    color: #666;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-}
-
-.sync-status.syncing {
-    background: #fff3cd;
-    color: #856404;
-    animation: pulse 1s infinite;
-}
-
-.sync-status.success {
-    background: #d4edda;
-    color: #155724;
-}
-
-.sync-status.connected {
-    background: #d1ecf1;
-    color: #0c5460;
-}
-
-.sync-status.failed {
-    background: #f8d7da;
-    color: #721c24;
-    cursor: pointer;
-}
-
-.sync-status.offline {
-    background: #e2e3e5;
-    color: #383d41;
-}
-
-.sync-status.pending {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.sync-status.failed {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-
-/* Collapsible Sections */
-.collapsible-section {
-    position: relative;
-}
-
-.collapsible-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    user-select: none;
-}
-
-.collapsible-header:hover {
-    background: #e9ecef;
-}
-
-.section-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.section-summary {
-    font-size: 12px;
-    color: #6c757d;
-    font-weight: normal;
-    margin-left: auto;
-    margin-right: 10px;
-}
-
-.collapse-toggle {
-    background: none;
-    border: none;
-    font-size: 16px;
-    color: #6c757d;
-    cursor: pointer;
-    padding: 0 5px;
-    transition: transform 0.3s ease;
-}
-
-.collapsible-content {
-    max-height: 1000px;
-    overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
-    opacity: 1;
-}
-
-.collapsible-content.collapsed {
-    max-height: 0;
-    opacity: 0;
-    padding-top: 0;
-    padding-bottom: 0;
 }
 
 .app-title {
@@ -504,7 +123,7 @@ body.dark-mode .dark-mode-toggle .moon-icon {
 }
 
 .main-content {
-    margin-top: 40px;
+    margin-top: 0;
 }
 
 /* Daily Quote Section */
@@ -1054,44 +673,6 @@ body.dark-mode .quote-toggle:hover {
 .message a {
     color: inherit;
     text-decoration: underline;
-}
-
-/* Dark Mode Collapsible Sections */
-body.dark-mode .collapsible-header {
-    background: #2a2a2a;
-    color: #e0e0e0;
-}
-
-body.dark-mode .collapsible-header:hover {
-    background: #3a3a3a;
-}
-
-body.dark-mode .section-summary {
-    color: #9e9e9e;
-}
-
-body.dark-mode .collapse-toggle {
-    color: #9e9e9e;
-}
-
-body.dark-mode .sync-status {
-    background: #2a2a2a;
-    color: #9e9e9e;
-}
-
-body.dark-mode .sync-status.syncing {
-    background: #3a3a2a;
-    color: #ffeb3b;
-}
-
-body.dark-mode .sync-status.success {
-    background: #1b5e20;
-    color: #81c784;
-}
-
-body.dark-mode .sync-status.failed {
-    background: #b71c1c;
-    color: #ef5350;
 }
 
 /* Comprehensive Dark Mode Styles - Complete Redesign */
@@ -2697,12 +2278,6 @@ body.dark-mode .budget-info {
     overflow-y: auto;
 }
 
-/* Hide mobile controls on desktop */
-.mobile-notes-toggle,
-.mobile-notes-back {
-    display: none;
-}
-
 .notes-sidebar-header {
     display: flex;
     justify-content: space-between;
@@ -2962,8 +2537,6 @@ body.dark-mode .budget-info {
 }
 
 .notes-editor-actions {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
 }
 
@@ -3000,7 +2573,7 @@ body.dark-mode .budget-info {
 }
 
 .color-picker {
-    width: 30px;
+    width: 50px;
     height: 30px;
     border: 1px solid #DEE2E6;
     border-radius: 4px;
@@ -3295,28 +2868,18 @@ body.dark-mode .note-tags-input {
 
 /* Comprehensive Mobile Responsive Design */
 @media (max-width: 768px) {
-    /* General Layout - Fix extra space issue */
-    body {
-        overflow-y: auto;
-        height: 100vh;
-    }
-    
+    /* General Layout */
     .container {
-        padding: 0;
+        padding: 10px;
         max-width: 100%;
-        min-height: 100vh;
-        margin: 0;
     }
     
     .main-content {
-        padding: 0;
-        margin: 0;
-        min-height: calc(100vh - 120px); /* Account for header and nav */
+        padding: 0px;
     }
     
     .view {
         padding: 10px;
-        min-height: calc(100vh - 120px);
     }
 
     /* Header */
@@ -3445,50 +3008,10 @@ body.dark-mode .note-tags-input {
         grid-template-columns: 1fr;
         height: auto;
         min-height: 400px;
-        position: relative;
     }
     
     .notes-sidebar {
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        z-index: 100;
-        background: #F8F9FA;
-        transition: left 0.3s ease;
-        border-right: none;
-    }
-    
-    .notes-sidebar.mobile-open {
-        left: 0;
-    }
-    
-    /* Add mobile notes toggle button */
-    .mobile-notes-toggle {
-        display: inline-block;
-        position: absolute;  /* Absolute within notes container */
-        top: 15px;
-        left: 15px;
-        background: #007BFF;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 14px;
-        z-index: 10;  /* Above content */
-        cursor: pointer;
-    }
-    
-    .mobile-notes-back {
-        display: block;
-        background: #6c757d;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 8px 12px;
-        margin: 10px 20px;
-        cursor: pointer;
+        display: none;
     }
     
     .formatting-toolbar {
@@ -3508,14 +3031,8 @@ body.dark-mode .note-tags-input {
         padding: 15px;
     }
     
-    .notes-editor-header {
-        padding: 15px;
-        padding-top: 50px;  /* Space for the toggle button */
-        position: relative;
-    }
-    
     .note-title-input {
-        font-size: 18px;
+        font-size: 20px;
         padding: 10px 15px;
     }
     
@@ -4627,17 +4144,10 @@ body.dark-mode .note-tags-input {
 /* Footer Styles */
 .app-footer {
     background: transparent;
-    padding: 20px;
+    padding: 30px 20px;
     text-align: center;
-    margin-top: auto; /* Push to bottom */
+    margin-top: 50px;
     border-top: 1px solid #e9ecef;
-    display: none; /* Hide footer on mobile to save space */
-}
-
-@media (min-width: 769px) {
-    .app-footer {
-        display: block;
-    }
 }
 
 .footer-content {
@@ -4661,17 +4171,15 @@ body.dark-mode .note-tags-input {
     color: #8b92a0;
 }
 
-/* Container should not force extra height */
+/* Ensure footer stays at bottom */
 .container {
-    min-height: calc(100vh - 60px); /* Account for any fixed headers */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    position: relative; /* For absolute positioning context */
 }
 
 main {
     flex: 1;
-    position: relative; /* Ensure children position correctly */
 }
 
 /* Responsive footer */
@@ -4867,43 +4375,19 @@ main {
     gap: 10px;
     padding: 8px 0;
     border-bottom: 1px solid #f1f3f4;
-    transition: all 0.2s ease;
 }
 
 .priority-task-item:last-child {
     border-bottom: none;
 }
 
-.priority-task-item:hover {
-    background-color: rgba(0, 123, 255, 0.05);
-    border-radius: 4px;
-}
-
 .task-checkbox {
     margin: 0;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
 }
 
 .task-text {
     flex: 1;
     font-size: 14px;
-    cursor: pointer;
-    transition: color 0.2s ease;
-}
-
-.task-text:hover {
-    color: #007bff;
-}
-
-.rolled-over-badge {
-    font-size: 12px;
-    background: rgba(255, 193, 7, 0.1);
-    border: 1px solid rgba(255, 193, 7, 0.3);
-    border-radius: 12px;
-    padding: 2px 6px;
-    margin-left: 5px;
 }
 
 .widget-action-btn {
@@ -5297,7 +4781,7 @@ main {
 
 /* Streak Manager Styles */
 .streak-container {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 15px;
 }
@@ -6225,15 +5709,9 @@ main {
 
 /* Mobile Navigation - Optimized for better space usage */
 @media (max-width: 768px) {
-    /* Hide quote section completely in mobile to save space */
+    /* Hide quote section completely in mobile */
     .daily-quote {
         display: none !important;
-    }
-    
-    /* Remove extra padding/margin that creates white space */
-    .header {
-        padding: 12px 8px !important;
-        margin-bottom: 0 !important;
     }
     
     .container {
@@ -6262,7 +5740,7 @@ main {
     
     /* Streak container mobile styling */
     .streak-container {
-        display: flex;
+        display: none;
         align-items: center;
         gap: 6px;
         margin-left: auto;
@@ -6410,7 +5888,7 @@ main {
     }
     
     .action-label {
-        font-size: 9px;
+        font-size: 12px;
     }
     
     /* Top Priorities - Move to second position */
@@ -7746,20 +7224,6 @@ body.dark-mode .priority-list li {
     color: var(--dark-text-secondary);
 }
 
-body.dark-mode .priority-task-item:hover {
-    background-color: rgba(108, 117, 125, 0.1);
-}
-
-body.dark-mode .task-text:hover {
-    color: #66b3ff;
-}
-
-body.dark-mode .rolled-over-badge {
-    background: rgba(255, 193, 7, 0.2);
-    border: 1px solid rgba(255, 193, 7, 0.5);
-    color: #ffc107;
-}
-
 /* Week Activity Dark Mode */
 body.dark-mode .activity-day {
     background-color: var(--dark-bg-tertiary) !important;
@@ -7898,97 +7362,6 @@ body.dark-mode .habit-day {
 
 body.dark-mode .habit-day.completed {
     background: linear-gradient(135deg, #10B981, #059669);
-}
-
-/* Daily Journal Styles */
-.daily-journal-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.journal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-}
-
-.journal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #e9ecef;
-}
-
-.journal-header h2 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    color: #333;
-    font-size: 20px;
-}
-
-.journal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #666;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: background 0.2s;
-}
-
-.journal-textarea,
-.journal-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    font-size: 14px;
-    font-family: inherit;
-    resize: vertical;
-    transition: border-color 0.2s;
-}
-
-.journal-textarea:focus,
-.journal-input:focus {
-    outline: none;
-    border-color: #007BFF;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-
-.journal-save-btn {
-    width: 100%;
-    padding: 12px;
-    background: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-top: 20px;
-}
-
-.journal-save-btn:hover {
-    background: #0056b3;
 }
 
 /* Notes Dark Mode */

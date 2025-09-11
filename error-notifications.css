@@ -1,0 +1,342 @@
+/* ERROR NOTIFICATIONS - User-friendly error messages styling */
+
+/* Base Notification Styles */
+.error-notification,
+.success-notification,
+.warning-notification,
+.info-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    animation: slideInRight 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(120%);
+    }
+}
+
+/* Error Notification */
+.error-notification {
+    border-left: 4px solid #dc3545;
+}
+
+.error-content {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+    position: relative;
+}
+
+.error-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.error-text {
+    flex: 1;
+}
+
+.error-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.error-message {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.error-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.error-close:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.error-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 16px 16px;
+}
+
+.error-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.error-btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.error-btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.error-btn-secondary {
+    background: #f8f9fa;
+    color: #666;
+}
+
+.error-btn-secondary:hover {
+    background: #e9ecef;
+}
+
+/* Success Notification */
+.success-notification {
+    border-left: 4px solid #28a745;
+}
+
+.success-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+}
+
+.success-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.success-message {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Warning Notification */
+.warning-notification {
+    border-left: 4px solid #ffc107;
+    background: #fffbf0;
+}
+
+.warning-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+    position: relative;
+}
+
+.warning-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.warning-message {
+    font-size: 14px;
+    color: #856404;
+    flex: 1;
+}
+
+.warning-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #856404;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+}
+
+/* Info Notification */
+.info-notification {
+    border-left: 4px solid #17a2b8;
+    background: #f0f8ff;
+}
+
+.info-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+}
+
+.info-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.info-message {
+    font-size: 14px;
+    color: #004085;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .error-notification,
+    .success-notification,
+    .warning-notification,
+    .info-notification {
+        top: auto;
+        bottom: 80px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+        animation: slideInUp 0.3s ease;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            transform: translateY(120%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .fade-out {
+        animation: fadeOutDown 0.3s ease forwards;
+    }
+    
+    @keyframes fadeOutDown {
+        to {
+            opacity: 0;
+            transform: translateY(120%);
+        }
+    }
+    
+    .error-actions {
+        flex-direction: column;
+    }
+    
+    .error-btn {
+        width: 100%;
+    }
+}
+
+/* Dark Mode Support */
+body.dark-mode .error-notification,
+body.dark-mode .success-notification,
+body.dark-mode .warning-notification,
+body.dark-mode .info-notification {
+    background: #2a2a2a;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .error-title,
+body.dark-mode .success-message {
+    color: #e4e6eb;
+}
+
+body.dark-mode .error-message {
+    color: #b0b3b8;
+}
+
+body.dark-mode .error-close,
+body.dark-mode .warning-close {
+    color: #b0b3b8;
+}
+
+body.dark-mode .error-close:hover {
+    background: #3a3a3a;
+    color: #e4e6eb;
+}
+
+body.dark-mode .error-btn-secondary {
+    background: #3a3a3a;
+    color: #e4e6eb;
+}
+
+body.dark-mode .error-btn-secondary:hover {
+    background: #444;
+}
+
+body.dark-mode .warning-notification {
+    background: #3a3a3a;
+}
+
+body.dark-mode .warning-message {
+    color: #ffc107;
+}
+
+body.dark-mode .info-notification {
+    background: #2a3a4a;
+}
+
+body.dark-mode .info-message {
+    color: #6cb2eb;
+}
+
+/* Toast Stack */
+.notification-stack {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .notification-stack {
+        top: auto;
+        bottom: 80px;
+        left: 10px;
+        right: 10px;
+    }
+}

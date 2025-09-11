@@ -77,10 +77,7 @@ class NotesManager {
             this.applyFormat('color', e.target.value);
         });
         
-        document.getElementById('highlight-color')?.addEventListener('change', (e) => {
-            this.applyFormat('highlight', e.target.value);
-        });
-        
+       
         // Note actions
         document.getElementById('note-pin')?.addEventListener('click', () => this.togglePin());
         document.getElementById('note-favorite')?.addEventListener('click', () => this.toggleFavorite());

@@ -78,9 +78,23 @@
     </script>
     
     <!-- Styles -->
+    <link rel="stylesheet" href="global-fonts.css">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dark-mode-consistency.css">
+    <link rel="stylesheet" href="desktop-header-fix.css">
+    <link rel="stylesheet" href="loading-states.css">
+    <link rel="stylesheet" href="error-notifications.css">
+    <link rel="stylesheet" href="daily-journal.css">
     <link rel="stylesheet" href="mobile-ui.css">
-    <link rel="stylesheet" href="notes-redesign.css">
+    <link rel="stylesheet" href="desktop-notes-fix.css">
+    <link rel="stylesheet" href="notes-exact-visual.css">
+    <link rel="stylesheet" href="notes-mobile-sidebar-fix.css">
+    <link rel="stylesheet" href="voice-button-enhanced.css">
+    <link rel="stylesheet" href="link-embeddings.css">
+    <link rel="stylesheet" href="smart-screenshots.css">
+    <link rel="stylesheet" href="voice-notes.css">
+    <link rel="stylesheet" href="notion-sidebar.css">
+    <link rel="stylesheet" href="walkthrough.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Preconnect to external domains -->
@@ -120,6 +134,9 @@
                 <button class="nav-tab" data-tab="expenses">EXPENSES</button>
                 <button class="nav-tab" data-tab="meals">MEALS</button>
                 <button class="nav-tab" data-tab="habits">HABITS</button>
+                <button class="nav-tab" data-tab="embeddings">LINKS</button>
+                <button class="nav-tab" data-tab="screenshots">SCREENSHOTS</button>
+                <button class="nav-tab" data-tab="voice-notes">VOICE</button>
                 <button class="nav-tab" data-tab="notes">NOTES</button>
                 <button class="nav-tab" data-tab="reminders">CALL REMINDERS</button>
                 <button class="nav-tab" data-tab="bucket-list">BUCKET LIST</button>
@@ -1120,18 +1137,16 @@
 
             <div id="notes-view" class="view">
                 <div class="notes-app-container">
-                    <!-- Mobile Notes Toggle Button -->
-                    <button class="mobile-notes-toggle" onclick="toggleMobileNotes()" aria-label="View Notes List">
-                        📝 Notes
+                    <!-- Mobile Menu Button for Notes -->
+                    <button class="notes-mobile-menu-btn" onclick="toggleMobileNotes()" aria-label="Open Notes Menu">
+                        ☰
                     </button>
                     
                     <!-- Notes Sidebar -->
                     <aside class="notes-sidebar" id="notes-sidebar">
-                        <button class="mobile-notes-back" onclick="closeMobileNotes()" aria-label="Back to Editor">
-                            ← Back to Editor
-                        </button>
                         <div class="notes-sidebar-header">
                             <h3>My Notes</h3>
+                            
                             <button id="new-note-btn" class="new-note-btn" title="Create new note">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -1270,7 +1285,6 @@
                                     </button>
                                     <div class="format-separator"></div>
                                     <input type="color" id="text-color" class="color-picker" title="Text Color">
-                                    <input type="color" id="highlight-color" class="color-picker" title="Highlight Color">
                                 </div>
                                 
                                 <!-- Note Actions -->
@@ -1439,6 +1453,26 @@
                 </div>
             </div>
 
+            <!-- Habits View -->
+            <div id="habits-view" class="view">
+                <!-- Habits tracker will be loaded here -->
+            </div>
+
+            <!-- Link Embeddings View -->
+            <div id="embeddings-view" class="view">
+                <!-- Link embeddings will be loaded here -->
+            </div>
+
+            <!-- Smart Screenshots View -->
+            <div id="screenshots-view" class="view">
+                <!-- Smart screenshots will be loaded here -->
+            </div>
+
+            <!-- Voice Notes View -->
+            <div id="voice-notes-view" class="view">
+                <!-- Voice notes will be loaded here -->
+            </div>
+
             <div id="about-view" class="view">
                 <div class="about-container">
                     <section class="about-section">
@@ -1585,8 +1619,91 @@
         </footer>
     </div>
 
+    <!-- Daily Journal Modal -->
+    <div id="journal-modal" class="journal-modal">
+        <div class="journal-container">
+            <div class="journal-header">
+                <h2>📔 Daily Journal</h2>
+                <button class="close-btn" onclick="closeJournalModal()">✕</button>
+            </div>
+            <div class="journal-content-wrapper">
+                <div class="journal-date" id="journal-date"></div>
+                <div class="journal-content">
+                    <div class="journal-section">
+                        <h3>How are you feeling today?</h3>
+                        <div class="mood-selector">
+                            <div class="mood-option" data-mood="amazing">
+                                <span class="mood-icon">😄</span>
+                                <span class="mood-label">Amazing</span>
+                            </div>
+                            <div class="mood-option" data-mood="good">
+                                <span class="mood-icon">😊</span>
+                                <span class="mood-label">Good</span>
+                            </div>
+                            <div class="mood-option" data-mood="okay">
+                                <span class="mood-icon">😐</span>
+                                <span class="mood-label">Okay</span>
+                            </div>
+                            <div class="mood-option" data-mood="not-great">
+                                <span class="mood-icon">😔</span>
+                                <span class="mood-label">Not Great</span>
+                            </div>
+                            <div class="mood-option" data-mood="terrible">
+                                <span class="mood-icon">😢</span>
+                                <span class="mood-label">Terrible</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="journal-section">
+                        <h3>Today's Highlights</h3>
+                        <label>What went well today?</label>
+                        <textarea class="journal-textarea" id="highlights" placeholder="Share your wins, big or small..."></textarea>
+                    </div>
+
+                    <div class="journal-section">
+                        <h3>Gratitude</h3>
+                        <label>What are you grateful for?</label>
+                        <textarea class="journal-textarea" id="gratitude" placeholder="List 3 things you're thankful for..."></textarea>
+                        <div class="gratitude-prompts">
+                            <span class="gratitude-prompt">Family</span>
+                            <span class="gratitude-prompt">Health</span>
+                            <span class="gratitude-prompt">Friends</span>
+                            <span class="gratitude-prompt">Work</span>
+                            <span class="gratitude-prompt">Nature</span>
+                        </div>
+                    </div>
+
+                    <div class="journal-section">
+                        <h3>Challenges</h3>
+                        <label>What challenges did you face?</label>
+                        <textarea class="journal-textarea" id="challenges" placeholder="What was difficult today?"></textarea>
+                    </div>
+
+                    <div class="journal-section">
+                        <h3>Tomorrow's Focus</h3>
+                        <label>What are your priorities for tomorrow?</label>
+                        <textarea class="journal-textarea" id="tomorrow" placeholder="Top 3 things to focus on..."></textarea>
+                    </div>
+
+                    <div class="free-thoughts-section">
+                        <h3>💭 Free Thoughts</h3>
+                        <textarea class="journal-textarea" id="free-thoughts" placeholder="Anything else on your mind..."></textarea>
+                    </div>
+
+                    <button class="save-entry-btn" onclick="saveJournalEntry()">
+                        <span>💾</span> Save Entry
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="setup-checker.js"></script>
+    <script src="loading-manager.js"></script>
+    <script src="error-handler.js"></script>
+    <script src="mobile-keyboard-fix.js"></script>
     <script src="https://apis.google.com/js/api.js" onload="console.log('Google API loaded')"></script>
     <script src="https://accounts.google.com/gsi/client" onload="console.log('Google Identity Services loaded')"></script>
     <script src="google-auth.js"></script>
@@ -1604,5 +1721,16 @@
     <script src="voice-commands.js"></script>
     <script src="smart-widgets.js"></script>
     <script src="mobile-ui.js"></script>
+    <script src="loading-manager.js"></script>
+    <script src="error-handler.js"></script>
+    <script src="mobile-keyboard-fix.js"></script>
+    <script src="link-embeddings.js"></script>
+    <script src="smart-screenshots.js"></script>
+    <script src="voice-notes.js"></script>
+    <script src="daily-journal.js"></script>
+    <script src="notion-sidebar.js"></script>
+    <script src="desktop-header-fix.js"></script>
+    <script src="walkthrough.js"></script>
+    <script src="sheets-integration.js"></script>
 </body>
 </html>

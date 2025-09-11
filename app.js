@@ -1973,8 +1973,35 @@ class TodoApp {
 // Mobile Notes Functions
 function toggleMobileNotes() {
     const sidebar = document.getElementById('notes-sidebar');
+    console.log('Toggle mobile notes called, sidebar:', sidebar);
+    
     if (sidebar) {
-        sidebar.classList.add('mobile-open');
+        // Toggle the class instead of just adding it
+        sidebar.classList.toggle('mobile-open');
+        console.log('Sidebar classes after toggle:', sidebar.classList.toString());
+        
+        // Add/remove overlay for mobile
+        let overlay = document.querySelector('.notes-overlay');
+        if (sidebar.classList.contains('mobile-open')) {
+            // Create overlay if it doesn't exist
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'notes-overlay';
+                overlay.onclick = closeMobileNotes;
+                document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'block';
+            // Force sidebar to be visible
+            sidebar.style.display = 'block';
+            sidebar.style.visibility = 'visible';
+        } else {
+            // Hide overlay
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+    } else {
+        console.error('Notes sidebar not found!');
     }
 }
 
@@ -1982,6 +2009,12 @@ function closeMobileNotes() {
     const sidebar = document.getElementById('notes-sidebar');
     if (sidebar) {
         sidebar.classList.remove('mobile-open');
+        
+        // Remove overlay
+        const overlay = document.querySelector('.notes-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
     }
 }
 

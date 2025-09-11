@@ -1,0 +1,348 @@
+/* DARK MODE CONSISTENCY FIX - ROOT LEVEL SOLUTION */
+
+/* Define CSS Variables for consistent theming */
+:root {
+    /* Light mode colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-tertiary: #999999;
+    --border-color: #dee2e6;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+    --primary-color: #007bff;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+}
+
+/* Dark mode variables */
+body.dark-mode {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2a2a2a;
+    --bg-tertiary: #3a3a3a;
+    --text-primary: #e4e6eb;
+    --text-secondary: #b0b3b8;
+    --text-tertiary: #8a8d91;
+    --border-color: #3e4042;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.5);
+    --primary-color: #4d9fff;
+    --success-color: #5cb85c;
+    --danger-color: #ff6b6b;
+    --warning-color: #ffd93d;
+    --info-color: #6bcf7f;
+}
+
+/* Apply variables to all major containers */
+body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container,
+.main-content,
+.view {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Headers and navigation */
+.header,
+.nav-tabs {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.nav-tab {
+    color: var(--text-secondary) !important;
+    background-color: transparent !important;
+}
+
+.nav-tab:hover {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+.nav-tab.active {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Cards and panels */
+.card,
+.panel,
+.task-item,
+.expense-item,
+.meal-item,
+.habit-item,
+.note-item,
+.goal-card,
+.bucket-item {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Inputs and form elements */
+input,
+textarea,
+select {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--primary-color) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(var(--primary-color), 0.1) !important;
+}
+
+/* Buttons */
+.btn,
+button {
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.btn-success {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+.btn-danger {
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+}
+
+/* Modals and overlays */
+.modal-content,
+.dropdown-menu,
+.tooltip,
+.popover {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: var(--border-color) !important;
+}
+
+/* Tables */
+table {
+    color: var(--text-primary) !important;
+}
+
+thead {
+    background-color: var(--bg-tertiary) !important;
+}
+
+tbody tr {
+    border-color: var(--border-color) !important;
+}
+
+tbody tr:hover {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* Specific dark mode fixes for problem areas */
+
+/* Dashboard cards */
+body.dark-mode .dashboard-card {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+body.dark-mode .dashboard-card h3 {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode .stat-value {
+    color: var(--primary-color) !important;
+}
+
+/* Smart widgets */
+body.dark-mode .smart-widget {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .widget-header {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* AI Insights */
+body.dark-mode .ai-insight-card {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .insight-text {
+    color: var(--text-primary) !important;
+}
+
+/* Expense tracker */
+body.dark-mode .expense-summary {
+    background: var(--bg-secondary) !important;
+}
+
+body.dark-mode .expense-category {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Meal tracker */
+body.dark-mode .meal-card {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode .calorie-badge {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Habit tracker */
+body.dark-mode .habit-checkbox:checked {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+body.dark-mode .habit-streak {
+    background: var(--bg-tertiary) !important;
+    color: var(--warning-color) !important;
+}
+
+/* Notes section - maintain yellow theme even in dark mode as per design */
+body.dark-mode #notes-view {
+    /* Keep yellow theme for notes as designed */
+}
+
+/* Quote section */
+body.dark-mode .daily-quote {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-mode #quote-text {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode #quote-author {
+    color: var(--text-secondary) !important;
+}
+
+/* Settings section */
+body.dark-mode .settings-section {
+    background: var(--bg-secondary) !important;
+}
+
+body.dark-mode .settings-item {
+    border-bottom-color: var(--border-color) !important;
+}
+
+body.dark-mode .settings-label {
+    color: var(--text-primary) !important;
+}
+
+/* About section */
+body.dark-mode .about-section {
+    background: var(--bg-secondary) !important;
+}
+
+body.dark-mode .about-card {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Mobile specific dark mode */
+@media (max-width: 768px) {
+    body.dark-mode .mobile-bottom-nav {
+        background: var(--bg-secondary) !important;
+        border-top: 1px solid var(--border-color) !important;
+    }
+    
+    body.dark-mode .bottom-nav-item {
+        color: var(--text-secondary) !important;
+    }
+    
+    body.dark-mode .bottom-nav-item.active {
+        color: var(--primary-color) !important;
+    }
+    
+    body.dark-mode .fab-button {
+        background: var(--primary-color) !important;
+    }
+    
+    body.dark-mode .quick-add-menu {
+        background: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    body.dark-mode .quick-add-item {
+        background: var(--bg-tertiary) !important;
+        color: var(--text-primary) !important;
+    }
+}
+
+/* Scrollbar styling for dark mode */
+body.dark-mode ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+body.dark-mode ::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 6px;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* Ensure all text is readable in dark mode */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode p,
+body.dark-mode span,
+body.dark-mode label,
+body.dark-mode div {
+    color: inherit;
+}
+
+/* Fix any remaining white backgrounds */
+body.dark-mode *[style*="background: white"],
+body.dark-mode *[style*="background-color: white"],
+body.dark-mode *[style*="background:#fff"],
+body.dark-mode *[style*="background-color:#fff"] {
+    background-color: var(--bg-secondary) !important;
+}

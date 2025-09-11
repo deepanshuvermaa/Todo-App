@@ -1,0 +1,666 @@
+/* DAILY JOURNAL - NOTION-INSPIRED AESTHETIC DESIGN */
+
+/* Journal Modal Base */
+.journal-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    padding: 40px 20px;
+    overflow-y: auto;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.journal-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Journal Container - Notion Style */
+.journal-container {
+    background: #ffffff;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+    animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Journal Header - Clean Notion Style */
+.journal-header {
+    background: #ffffff;
+    padding: 24px 32px;
+    border-bottom: 1px solid #e5e5e5;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.journal-header h2 {
+    color: #191919;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    font-family: var(--font-stack);
+    letter-spacing: -0.02em;
+}
+
+.journal-header .close-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: transparent;
+    border: none;
+    color: #969696;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.journal-header .close-btn:hover {
+    background: #f7f7f7;
+    color: #191919;
+}
+
+/* Journal Content Area */
+.journal-content-wrapper {
+    overflow-y: auto;
+    flex: 1;
+    background: #ffffff;
+}
+
+/* Journal Date - Notion Style */
+.journal-date {
+    background: #fafafa;
+    padding: 12px 32px;
+    font-size: 14px;
+    color: #787878;
+    font-weight: 500;
+    border-bottom: 1px solid #e5e5e5;
+    font-family: var(--font-stack);
+}
+
+/* Journal Content */
+.journal-content {
+    padding: 32px;
+}
+
+/* Journal Section - Notion Style */
+.journal-section {
+    margin-bottom: 32px;
+}
+
+.journal-section h3 {
+    font-size: 14px;
+    color: #191919;
+    margin: 0 0 12px 0;
+    font-weight: 600;
+    font-family: var(--font-stack);
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    opacity: 0.6;
+}
+
+.journal-section label {
+    display: block;
+    font-size: 13px;
+    color: #787878;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-family: var(--font-stack);
+}
+
+/* Journal Inputs - Notion Style */
+.journal-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    font-size: 15px;
+    font-family: var(--font-stack);
+    line-height: 1.6;
+    resize: vertical;
+    transition: all 0.15s ease;
+    background: #ffffff;
+    color: #191919;
+}
+
+.journal-textarea:focus {
+    outline: none;
+    border-color: #2383e2;
+    box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.14);
+}
+
+.journal-textarea::placeholder {
+    color: #b3b3b3;
+}
+
+/* Mood Selector - Notion Style */
+.mood-selector {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+    padding: 16px;
+    background: #fafafa;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.mood-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    border: 2px solid transparent;
+    background: #ffffff;
+    min-width: 72px;
+}
+
+.mood-option:hover {
+    background: #f7f7f7;
+    transform: translateY(-1px);
+}
+
+.mood-option.selected {
+    background: #e8f4fd;
+    border-color: #2383e2;
+}
+
+.mood-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.mood-label {
+    font-size: 11px;
+    color: #787878;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-family: var(--font-stack);
+}
+
+/* Mood Slider - Notion Style */
+.mood-slider-container {
+    margin: 24px 0;
+}
+
+.mood-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.mood-slider-label {
+    font-size: 13px;
+    color: #787878;
+    font-weight: 500;
+    font-family: var(--font-stack);
+}
+
+.mood-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2383e2;
+    font-family: var(--font-stack);
+}
+
+.mood-slider {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: #e5e5e5;
+    outline: none;
+    -webkit-appearance: none;
+    margin: 8px 0;
+}
+
+.mood-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2383e2;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.mood-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(35, 131, 226, 0.35);
+}
+
+.mood-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2383e2;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Free Thoughts Section */
+.free-thoughts-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.free-thoughts-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #191919;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0.6;
+    letter-spacing: -0.01em;
+}
+
+/* Save Button - Notion Style */
+.save-entry-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: #2383e2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-stack);
+    letter-spacing: -0.01em;
+}
+
+.save-entry-btn:hover {
+    background: #1a73d2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(35, 131, 226, 0.25);
+}
+
+.save-entry-btn:active {
+    transform: translateY(0);
+}
+
+/* Gratitude Prompts - Notion Style */
+.gratitude-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.gratitude-prompt {
+    padding: 6px 12px;
+    background: #f7f7f7;
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+    font-size: 12px;
+    color: #787878;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: var(--font-stack);
+}
+
+.gratitude-prompt:hover {
+    background: #2383e2;
+    border-color: #2383e2;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Character Counter */
+.char-counter {
+    text-align: right;
+    font-size: 11px;
+    color: #b3b3b3;
+    margin-top: 6px;
+    font-family: var(--font-stack);
+}
+
+/* Mobile Specific Styles */
+@media (max-width: 768px) {
+    .journal-modal {
+        padding: 0;
+        align-items: flex-end;
+    }
+    
+    .journal-container {
+        max-width: 100%;
+        width: 100%;
+        height: 92vh;
+        max-height: 92vh;
+        border-radius: 16px 16px 0 0;
+        animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+    
+    .journal-header {
+        padding: 20px 20px;
+        border-radius: 16px 16px 0 0;
+        background: #fafafa;
+        border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .journal-header h2 {
+        font-size: 18px;
+    }
+    
+    .journal-header .close-btn {
+        top: 20px;
+        right: 20px;
+    }
+    
+    .journal-date {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+    
+    .journal-content {
+        padding: 20px;
+        padding-bottom: 100px;
+    }
+    
+    .journal-section {
+        margin-bottom: 24px;
+    }
+    
+    .journal-textarea {
+        min-height: 100px;
+        font-size: 14px;
+        padding: 10px;
+    }
+    
+    .mood-selector {
+        gap: 8px;
+        padding: 12px;
+    }
+    
+    .mood-option {
+        padding: 10px;
+        min-width: 64px;
+    }
+    
+    .mood-icon {
+        font-size: 24px;
+    }
+    
+    .save-entry-btn {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        width: calc(100% - 40px);
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 15px;
+        z-index: 10;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    }
+}
+
+/* Tablet Specific */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .journal-container {
+        max-width: 600px;
+    }
+    
+    .journal-content {
+        padding: 28px;
+    }
+}
+
+/* Dark Mode Support - Notion Dark Theme */
+body.dark-mode .journal-modal {
+    background: rgba(15, 15, 15, 0.8);
+}
+
+body.dark-mode .journal-container {
+    background: #191919;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .journal-header {
+    background: #191919;
+    border-bottom-color: #2f2f2f;
+}
+
+body.dark-mode .journal-header h2 {
+    color: #e9e9e9;
+}
+
+body.dark-mode .journal-header .close-btn {
+    color: #787878;
+}
+
+body.dark-mode .journal-header .close-btn:hover {
+    background: #2f2f2f;
+    color: #e9e9e9;
+}
+
+body.dark-mode .journal-content-wrapper {
+    background: #191919;
+}
+
+body.dark-mode .journal-date {
+    background: #202020;
+    color: #969696;
+    border-bottom-color: #2f2f2f;
+}
+
+body.dark-mode .journal-section h3 {
+    color: #e9e9e9;
+}
+
+body.dark-mode .journal-section label {
+    color: #969696;
+}
+
+body.dark-mode .journal-textarea {
+    background: #202020;
+    border-color: #2f2f2f;
+    color: #e9e9e9;
+}
+
+body.dark-mode .journal-textarea:focus {
+    border-color: #2383e2;
+    box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.2);
+}
+
+body.dark-mode .journal-textarea::placeholder {
+    color: #505050;
+}
+
+body.dark-mode .mood-selector {
+    background: #202020;
+}
+
+body.dark-mode .mood-option {
+    background: #191919;
+}
+
+body.dark-mode .mood-option:hover {
+    background: #2f2f2f;
+}
+
+body.dark-mode .mood-option.selected {
+    background: #1a3a52;
+    border-color: #2383e2;
+}
+
+body.dark-mode .mood-label {
+    color: #969696;
+}
+
+body.dark-mode .mood-slider {
+    background: #2f2f2f;
+}
+
+body.dark-mode .mood-slider-label {
+    color: #969696;
+}
+
+body.dark-mode .free-thoughts-section {
+    border-top-color: #2f2f2f;
+}
+
+body.dark-mode .free-thoughts-section h3 {
+    color: #e9e9e9;
+}
+
+body.dark-mode .gratitude-prompt {
+    background: #202020;
+    border-color: #2f2f2f;
+    color: #969696;
+}
+
+body.dark-mode .gratitude-prompt:hover {
+    background: #2383e2;
+    border-color: #2383e2;
+    color: white;
+}
+
+body.dark-mode .char-counter {
+    color: #505050;
+}
+
+/* Success Animation */
+@keyframes successPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.35);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25);
+    }
+}
+
+.save-success {
+    animation: successPulse 0.5s ease;
+    background: #28a745 !important;
+}
+
+/* Loading State */
+.journal-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #787878;
+}
+
+.journal-loading::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    margin-left: 12px;
+    border: 2px solid #e5e5e5;
+    border-top-color: #2383e2;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Enhanced Scrollbar for Journal Content */
+.journal-content-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.journal-content-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.journal-content-wrapper::-webkit-scrollbar-thumb {
+    background: #d4d4d4;
+    border-radius: 4px;
+}
+
+.journal-content-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #b0b0b0;
+}
+
+body.dark-mode .journal-content-wrapper::-webkit-scrollbar-thumb {
+    background: #404040;
+}
+
+body.dark-mode .journal-content-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #505050;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    /* Fix close button touch target on mobile */
+    .journal-header .close-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+        z-index: 100;
+        position: absolute;
+        top: 15px;
+        right: 15px;
+    }
+}

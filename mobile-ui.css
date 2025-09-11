@@ -126,7 +126,7 @@
     gap: 12px;
     padding: 24px;
     z-index: 2001;
-    width: 340px;
+    width: 360px;
     max-width: 90vw;
     background: white;
     border-radius: 20px;
@@ -479,45 +479,8 @@
     background: #0056b3;
 }
 
-/* Notes editor toolbar - clean 6 per row layout */
-@media (max-width: 768px) {
-    .notes-editor-toolbar,
-    .editor-toolbar,
-    .notes-editor-actions {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 6px !important;
-        padding: 10px !important;
-        background: white !important;
-        border-bottom: 1px solid #e9ecef !important;
-        margin: 0 !important;
-    }
-    
-    .format-btn,
-    .editor-btn,
-    .note-action-btn {
-        width: calc(16.666% - 5px) !important; /* 6 per row */
-        min-width: unset !important;
-        height: 42px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        background: #f8f9fa !important;
-        border: 1px solid #dee2e6 !important;
-        border-radius: 8px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 18px !important;
-        cursor: pointer !important;
-    }
-    
-    .format-btn:active,
-    .editor-btn:active {
-        background: #007BFF !important;
-        color: white !important;
-        transform: scale(0.95);
-    }
-}
+/* Notes editor toolbar - Removed to let notes-redesign.css handle it */
+/* All notes styling is now in notes-redesign.css for proper yellow theme */
 
 /* Task View Mobile Styling */
 @media (max-width: 768px) {

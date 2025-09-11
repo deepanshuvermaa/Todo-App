@@ -1,0 +1,40 @@
+/* DESKTOP NOTES FIX - HIDE MOBILE-ONLY BUTTONS */
+
+/* ONLY apply these styles on DESKTOP (769px and above) */
+@media only screen and (min-width: 769px) {
+    /* Hide mobile menu button on desktop ONLY */
+    .notes-mobile-menu-btn {
+        display: none !important;
+    }
+    
+    /* Hide sidebar close button on desktop ONLY */
+    .notes-sidebar-close {
+        display: none !important;
+    }
+    
+    /* Hide any mobile toggle buttons on desktop ONLY */
+    .mobile-notes-toggle,
+    .toggle-notes-sidebar {
+        display: none !important;
+    }
+}
+
+/* Ensure mobile buttons ARE visible on mobile */
+@media only screen and (max-width: 768px) {
+    /* Force show mobile menu button */
+    .notes-mobile-menu-btn {
+        display: flex !important;
+        position: fixed !important;
+        top: 70px !important;
+        left: 12px !important;
+        z-index: 1050 !important;
+    }
+    
+    /* Force show sidebar close button when sidebar is open */
+    .notes-sidebar .notes-sidebar-close {
+        display: flex !important;
+        position: absolute !important;
+        top: 16px !important;
+        left: 16px !important;
+    }
+}

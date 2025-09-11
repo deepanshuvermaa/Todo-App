@@ -13,7 +13,8 @@
       "Bash(findstr:*)",
       "Bash(powershell:*)",
       "Bash(git checkout:*)",
-      "Bash(start index.html)"
+      "Bash(start index.html)",
+      "Bash(del notes-redesign.css notes-mobile-fix.css)"
     ],
     "deny": [],
     "ask": []
