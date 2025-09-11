@@ -14,7 +14,8 @@
       "Bash(powershell:*)",
       "Bash(git checkout:*)",
       "Bash(start index.html)",
-      "Bash(del notes-redesign.css notes-mobile-fix.css)"
+      "Bash(del notes-redesign.css notes-mobile-fix.css)",
+      "Bash(del mobile-fixes.css)"
     ],
     "deny": [],
     "ask": []

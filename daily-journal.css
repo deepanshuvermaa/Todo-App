@@ -366,20 +366,34 @@
     font-family: var(--font-stack);
 }
 
-/* Mobile Specific Styles */
+/* Mobile Specific Styles - With Keyboard Fixes */
 @media (max-width: 768px) {
     .journal-modal {
         padding: 0;
         align-items: flex-end;
     }
     
+    .journal-modal.active {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+    }
+    
     .journal-container {
         max-width: 100%;
         width: 100%;
-        height: 92vh;
-        max-height: 92vh;
+        height: 100vh;
+        max-height: 100vh;
         border-radius: 16px 16px 0 0;
         animation: slideUp 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
     
     @keyframes slideUp {
@@ -412,9 +426,25 @@
         font-size: 13px;
     }
     
+    .journal-content-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 100px;
+    }
+    
     .journal-content {
         padding: 20px;
         padding-bottom: 100px;
+    }
+    
+    /* Save button fix for mobile */
+    .save-entry-btn {
+        position: sticky !important;
+        bottom: 10px !important;
+        z-index: 10 !important;
+        margin: 20px !important;
+        width: calc(100% - 40px) !important;
     }
     
     .journal-section {
@@ -662,5 +692,25 @@ body.dark-mode .journal-content-wrapper::-webkit-scrollbar-thumb:hover {
         position: absolute;
         top: 15px;
         right: 15px;
+    }
+    
+    /* When keyboard is open */
+    body.keyboard-open .journal-modal {
+        height: 100vh;
+        position: fixed;
+    }
+    
+    body.keyboard-open .journal-container {
+        height: 100%;
+        max-height: none;
+    }
+    
+    body.keyboard-open .journal-content-wrapper {
+        height: calc(100vh - 200px);
+        overflow-y: scroll !important;
+    }
+    
+    body.keyboard-open .mobile-bottom-nav {
+        display: none !important;
     }
 }

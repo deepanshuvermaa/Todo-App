@@ -40,6 +40,7 @@ class MobileUIEnhancement {
         this.setupSmartHeader();
         this.optimizeTouch();
         this.checkFirstVisit();
+        this.setupBackButtonNavigation();
         
         // Hide desktop navigation
         const desktopNav = document.querySelector('.nav-tabs');
@@ -511,7 +512,32 @@ class MobileUIEnhancement {
         }
     }
     
-    switchView(viewName) {
+    setupBackButtonNavigation() {
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.view) {
+                this.switchView(e.state.view, true);
+            } else {
+                // Default to today view
+                const hash = window.location.hash.slice(1);
+                if (hash) {
+                    this.switchView(hash, true);
+                } else {
+                    this.switchView('today', true);
+                }
+            }
+        });
+        
+        // Set initial state
+        const initialView = window.location.hash.slice(1) || 'today';
+        history.replaceState({ view: initialView }, '', `#${initialView}`);
+        this.switchView(initialView, true);
+    }
+    
+    switchView(viewName, isBackNavigation = false) {
+        // Store previous view for back navigation
+        const previousView = this.currentView;
+        
         // Update active nav item
         document.querySelectorAll('.bottom-nav-item').forEach(item => {
             if (item.dataset.view === viewName) {
@@ -528,6 +554,11 @@ class MobileUIEnhancement {
         }
         
         this.currentView = viewName;
+        
+        // Add to history for back button navigation (only if not coming from back button)
+        if (!isBackNavigation && previousView !== viewName) {
+            history.pushState({ view: viewName }, '', `#${viewName}`);
+        }
     }
     
     handleQuickAdd(action) {
