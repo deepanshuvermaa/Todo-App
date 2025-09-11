@@ -69,7 +69,7 @@
     to { width: 60%; }
 }
 
-/* FAB Button */
+/* FAB Button - Modern Style */
 .bottom-nav-fab-container {
     position: relative;
     top: -8px;
@@ -79,24 +79,45 @@
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: #007BFF; /* Use theme primary color */
+    background: #667eea;
     border: none;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    position: relative;
+    overflow: hidden;
+}
+
+.fab-button:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
 }
 
 .fab-button:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5);
+}
+
+.fab-button:active:before {
+    width: 100px;
+    height: 100px;
 }
 
 .fab-button.active {
     transform: rotate(135deg);
-    background: #dc3545; /* Use theme danger color */
+    background: #dc3545;
 }
 
 /* Quick Add Menu */
@@ -143,16 +164,32 @@
     justify-content: center;
     width: 95px;
     height: 95px;
-    background: #f8f9fa;
+    background: white;
     border: 2px solid #e9ecef;
     border-radius: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-add-item:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(102, 126, 234, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
 }
 
 .quick-add-item .quick-add-icon {
     font-size: 36px;
     margin-bottom: 6px;
+    transition: transform 0.3s;
 }
 
 .quick-add-item span {
@@ -161,9 +198,18 @@
     color: #333;
 }
 
+.quick-add-item:hover .quick-add-icon {
+    transform: scale(1.1);
+}
+
 .quick-add-item:active {
     transform: scale(0.95);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border-color: #667eea;
+}
+
+.quick-add-item:active:before {
+    width: 150px;
+    height: 150px;
 }
 
 @keyframes slideUp {
@@ -274,16 +320,35 @@
     align-items: center;
     justify-content: center;
     padding: 16px;
-    background: #f5f5f5;
-    border: none;
+    background: #f8f9fa;
+    border: 1px solid transparent;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+}
+
+.more-menu-item:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
 .more-menu-item:active {
-    background: #e0e0e0;
-    transform: scale(0.98);
+    background: #ffffff;
+    border-color: #667eea;
+    transform: scale(0.95);
+}
+
+.more-menu-item:active:before {
+    opacity: 1;
 }
 
 .more-item-icon {
@@ -496,50 +561,103 @@
 /* Notes editor toolbar - Removed to let notes-redesign.css handle it */
 /* All notes styling is now in notes-redesign.css for proper yellow theme */
 
-/* Task View Mobile Styling */
+/* Task View Mobile Styling - Evernote Inspired */
 @media (max-width: 768px) {
-    .task-item {
-        background: white !important;
-        border: 1px solid #e9ecef !important;
-        border-radius: 12px !important;
-        padding: 12px !important;
-        margin: 8px 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 12px !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    #today-view,
+    #tasks-view {
+        background: #f8f9fa !important;
+        padding: 0 !important;
     }
     
+    .task-item {
+        background: #ffffff !important;
+        border: none !important;
+        border-bottom: 1px solid #e5e5e5 !important;
+        border-radius: 0 !important;
+        padding: 16px 20px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        box-shadow: none !important;
+        transition: all 0.2s ease !important;
+        position: relative !important;
+    }
+    
+    .task-item:first-child {
+        border-top: 1px solid #e5e5e5 !important;
+    }
+    
+    .task-item:active {
+        background: #f5f5f5 !important;
+    }
+    
+    /* Custom Checkbox Style */
     .task-checkbox {
-        width: 20px !important;
-        height: 20px !important;
-        min-width: 20px !important;
-        accent-color: #007BFF !important;
+        position: relative !important;
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        background: white !important;
+        border: 2px solid #00a82d !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+        margin-top: 2px !important;
+    }
+    
+    .task-checkbox:checked {
+        background: #00a82d !important;
+        border-color: #00a82d !important;
+    }
+    
+    .task-checkbox:checked:after {
+        content: '' !important;
+        position: absolute !important;
+        left: 7px !important;
+        top: 3px !important;
+        width: 6px !important;
+        height: 12px !important;
+        border: solid white !important;
+        border-width: 0 2px 2px 0 !important;
+        transform: rotate(45deg) !important;
     }
     
     .task-text {
         flex: 1 !important;
-        font-size: 15px !important;
-        color: #333 !important;
+        font-size: 16px !important;
+        line-height: 1.5 !important;
+        color: #2e2e2e !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+        word-wrap: break-word !important;
     }
     
     .task-item.completed .task-text {
         text-decoration: line-through !important;
-        color: #6c757d !important;
+        color: #737373 !important;
+        opacity: 0.7 !important;
     }
     
     .task-delete {
-        background: #dc3545 !important;
-        color: white !important;
+        background: transparent !important;
+        color: #737373 !important;
         border: none !important;
-        border-radius: 50% !important;
-        width: 28px !important;
-        height: 28px !important;
+        border-radius: 4px !important;
+        width: 32px !important;
+        height: 32px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         font-size: 18px !important;
         cursor: pointer !important;
+        transition: all 0.2s !important;
+    }
+    
+    .task-delete:active {
+        background: #fee4e2 !important;
+        color: #dc3545 !important;
     }
     
     #pending-tasks,
@@ -547,6 +665,36 @@
         padding: 0 !important;
         margin: 0 !important;
         list-style: none !important;
+        background: white !important;
+    }
+    
+    /* Task Input Area */
+    #task-input {
+        background: white !important;
+        border: 1px solid #e5e5e5 !important;
+        border-radius: 8px !important;
+        padding: 14px !important;
+        font-size: 16px !important;
+        margin: 16px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    #task-input:focus {
+        outline: none !important;
+        border-color: #00a82d !important;
+        box-shadow: 0 0 0 2px rgba(0, 168, 45, 0.2) !important;
+    }
+    
+    /* Section Headers */
+    .task-section-header {
+        padding: 12px 20px !important;
+        background: #f8f9fa !important;
+        border-bottom: 2px solid #e5e5e5 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #737373 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
     }
 }
 
@@ -559,11 +707,12 @@
     
     .expense-input-section,
     .expense-quick-add {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        border-radius: 20px !important;
+        background: #ffffff !important;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 16px !important;
         padding: 20px !important;
         margin-bottom: 20px !important;
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
     }
     
     .expense-form {
@@ -575,34 +724,49 @@
     .expense-amount-input,
     #expense-amount,
     .expense-input.amount-input {
-        background: rgba(255, 255, 255, 0.95) !important;
-        border: none !important;
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
         border-radius: 12px !important;
         padding: 15px !important;
         font-size: 24px !important;
         font-weight: 600 !important;
         text-align: center !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
         color: #333 !important;
+        transition: all 0.2s !important;
+    }
+    
+    #expense-amount:focus {
+        border-color: #667eea !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+        background: #ffffff !important;
     }
     
     .expense-category-select,
     #expense-category,
     .expense-input.category-select {
-        background: rgba(255, 255, 255, 0.95) !important;
-        border: none !important;
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
         border-radius: 12px !important;
-        padding: 12px !important;
+        padding: 14px 40px 14px 14px !important;
         font-size: 16px !important;
         font-weight: 500 !important;
         color: #333 !important;
         -webkit-appearance: none !important;
         -moz-appearance: none !important;
         appearance: none !important;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E") !important;
         background-repeat: no-repeat !important;
-        background-position: right 12px center !important;
-        padding-right: 30px !important;
+        background-position: right 14px center !important;
+        background-size: 16px !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+    }
+    
+    #expense-category:focus {
+        border-color: #667eea !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
     }
     
     .expense-description-input,
@@ -617,20 +781,42 @@
         color: #333 !important;
     }
     
-    #add-expense-btn {
-        background: white !important;
-        color: #667eea !important;
+    #add-expense-btn,
+    .add-btn {
+        background: #667eea !important;
+        color: white !important;
         border: none !important;
         border-radius: 12px !important;
         padding: 15px !important;
         font-size: 16px !important;
         font-weight: 600 !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-        transition: all 0.3s !important;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25) !important;
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    
+    #add-expense-btn:before {
+        content: '' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        width: 0 !important;
+        height: 0 !important;
+        border-radius: 50% !important;
+        background: rgba(255, 255, 255, 0.3) !important;
+        transform: translate(-50%, -50%) !important;
+        transition: width 0.6s, height 0.6s !important;
     }
     
     #add-expense-btn:active {
-        transform: scale(0.98) !important;
+        transform: scale(0.95) !important;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3) !important;
+    }
+    
+    #add-expense-btn:active:before {
+        width: 300px !important;
+        height: 300px !important;
     }
     
     .expense-list,
@@ -791,8 +977,10 @@ body.dark-mode .mobile-bottom-nav {
 
 /* Dark mode for expense section */
 @media (max-width: 768px) {
-    body.dark-mode .expense-input-section {
-        background: linear-gradient(135deg, #4a5fc7 0%, #5a3d82 100%);
+    body.dark-mode .expense-input-section,
+    body.dark-mode .expense-quick-add {
+        background: #1a1a1a !important;
+        border-color: #3e4042 !important;
     }
     
     body.dark-mode .expense-item {
@@ -802,13 +990,14 @@ body.dark-mode .mobile-bottom-nav {
     body.dark-mode #expense-amount,
     body.dark-mode #expense-category,
     body.dark-mode #expense-description {
-        background: rgba(42, 42, 42, 0.95) !important;
+        background: #2a2a2a !important;
+        border-color: #3e4042 !important;
         color: #e4e6eb !important;
     }
     
     body.dark-mode #add-expense-btn {
-        background: #2a2a2a !important;
-        color: #e4e6eb !important;
+        background: #667eea !important;
+        color: white !important;
     }
     
     body.dark-mode .expense-list,
@@ -817,7 +1006,8 @@ body.dark-mode .mobile-bottom-nav {
     }
     
     body.dark-mode .quick-amount-btn {
-        background: rgba(42, 42, 42, 0.9) !important;
+        background: #2a2a2a !important;
+        border: 1px solid #3e4042 !important;
         color: #e4e6eb !important;
     }
 }

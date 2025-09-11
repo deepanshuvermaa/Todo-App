@@ -1,0 +1,402 @@
+/* EVERNOTE-INSPIRED TASK DESIGN */
+
+/* Task Container */
+.evernote-task-container {
+    padding: 0;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Task List */
+.evernote-task-list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+/* Individual Task Item - Evernote Style */
+.evernote-task-item {
+    background: #ffffff;
+    border: none;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 16px 20px;
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.evernote-task-item:first-child {
+    border-top: 1px solid #e5e5e5;
+}
+
+.evernote-task-item:hover {
+    background: #fafafa;
+}
+
+.evernote-task-item:active {
+    background: #f5f5f5;
+}
+
+/* Custom Checkbox - Evernote Style */
+.evernote-checkbox {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.evernote-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.evernote-checkbox-custom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00a82d;
+    border-radius: 4px;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.evernote-checkbox input:checked ~ .evernote-checkbox-custom {
+    background: #00a82d;
+    border-color: #00a82d;
+}
+
+.evernote-checkbox input:checked ~ .evernote-checkbox-custom:after {
+    content: '';
+    position: absolute;
+    display: block;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Task Content */
+.evernote-task-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.evernote-task-text {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #2e2e2e;
+    margin: 0;
+    word-wrap: break-word;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+
+.evernote-task-item.completed .evernote-task-text {
+    color: #737373;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Task Meta Information */
+.evernote-task-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.evernote-task-date {
+    font-size: 13px;
+    color: #737373;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.evernote-task-priority {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-high {
+    background: #fee4e2;
+    color: #d92b2b;
+}
+
+.priority-medium {
+    background: #fff3cd;
+    color: #f79e00;
+}
+
+.priority-low {
+    background: #d4edda;
+    color: #00a82d;
+}
+
+/* Task Actions */
+.evernote-task-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.evernote-task-item:hover .evernote-task-actions {
+    opacity: 1;
+}
+
+.evernote-task-action {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #737373;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.evernote-task-action:hover {
+    background: #e5e5e5;
+    color: #2e2e2e;
+}
+
+/* Add Task Input - Evernote Style */
+.evernote-add-task {
+    background: white;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.evernote-add-task-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    color: #2e2e2e;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.evernote-add-task-input:focus {
+    background: white;
+    box-shadow: 0 0 0 2px #00a82d;
+}
+
+.evernote-add-task-input::placeholder {
+    color: #9a9a9a;
+}
+
+/* Task Sections */
+.evernote-task-section {
+    margin-bottom: 24px;
+}
+
+.evernote-section-header {
+    padding: 12px 20px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.evernote-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #737373;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.evernote-section-count {
+    background: #e5e5e5;
+    color: #2e2e2e;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Empty State */
+.evernote-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #9a9a9a;
+}
+
+.evernote-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.evernote-empty-text {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* Swipe Actions for Mobile */
+@media (max-width: 768px) {
+    .evernote-task-item {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .evernote-swipe-actions {
+        position: absolute;
+        right: -100px;
+        top: 0;
+        bottom: 0;
+        width: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #dc3545;
+        color: white;
+        transition: transform 0.3s;
+    }
+    
+    .evernote-task-item.swiped .evernote-swipe-actions {
+        transform: translateX(-100px);
+    }
+    
+    /* Mobile optimizations */
+    .evernote-task-item {
+        padding: 14px 16px;
+    }
+    
+    .evernote-task-text {
+        font-size: 15px;
+    }
+    
+    .evernote-task-actions {
+        display: none;
+    }
+    
+    /* Better touch targets */
+    .evernote-checkbox {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .evernote-checkbox-custom {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .evernote-checkbox input:checked ~ .evernote-checkbox-custom:after {
+        left: 7px;
+        top: 3px;
+        width: 6px;
+        height: 12px;
+    }
+}
+
+/* Dark Mode Support */
+body.dark-mode .evernote-task-container {
+    background: #1a1a1a;
+}
+
+body.dark-mode .evernote-task-item {
+    background: #2a2a2a;
+    border-bottom-color: #3e4042;
+}
+
+body.dark-mode .evernote-task-item:hover {
+    background: #333333;
+}
+
+body.dark-mode .evernote-task-text {
+    color: #e4e6eb;
+}
+
+body.dark-mode .evernote-task-item.completed .evernote-task-text {
+    color: #8a8d91;
+}
+
+body.dark-mode .evernote-checkbox-custom {
+    background: #2a2a2a;
+    border-color: #00a82d;
+}
+
+body.dark-mode .evernote-add-task {
+    background: #2a2a2a;
+    border-color: #3e4042;
+}
+
+body.dark-mode .evernote-add-task-input {
+    background: #1a1a1a;
+    color: #e4e6eb;
+}
+
+body.dark-mode .evernote-add-task-input:focus {
+    background: #2a2a2a;
+}
+
+body.dark-mode .evernote-section-header {
+    background: #2a2a2a;
+    border-bottom-color: #3e4042;
+}
+
+body.dark-mode .evernote-section-count {
+    background: #3e4042;
+    color: #e4e6eb;
+}
+
+/* Animations */
+@keyframes taskSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.evernote-task-item.new-task {
+    animation: taskSlideIn 0.3s ease;
+}
+
+@keyframes taskComplete {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.95);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.evernote-task-item.completing {
+    animation: taskComplete 0.3s ease;
+}

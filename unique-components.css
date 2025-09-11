@@ -1,0 +1,516 @@
+/* UNIQUE COMPONENTS - lifeTracker Signature Elements */
+
+/* Floating Action Speed Dial */
+.speed-dial {
+    position: fixed;
+    bottom: 80px;
+    right: 30px;
+    z-index: 1000;
+}
+
+.speed-dial-trigger {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    position: relative;
+    z-index: 2;
+}
+
+.speed-dial-trigger:hover {
+    transform: scale(1.1) rotate(90deg);
+}
+
+.speed-dial-trigger.active {
+    transform: rotate(135deg);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.speed-dial-actions {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+}
+
+.speed-dial.active .speed-dial-actions {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.speed-dial-action {
+    position: absolute;
+    right: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    font-size: 18px;
+}
+
+.speed-dial-action:nth-child(1) { bottom: 0px; }
+.speed-dial-action:nth-child(2) { bottom: 50px; }
+.speed-dial-action:nth-child(3) { bottom: 100px; }
+.speed-dial-action:nth-child(4) { bottom: 150px; }
+
+.speed-dial.active .speed-dial-action:nth-child(1) {
+    transform: translateY(-10px);
+    transition-delay: 0.05s;
+}
+
+.speed-dial.active .speed-dial-action:nth-child(2) {
+    transform: translateY(-10px);
+    transition-delay: 0.1s;
+}
+
+.speed-dial.active .speed-dial-action:nth-child(3) {
+    transform: translateY(-10px);
+    transition-delay: 0.15s;
+}
+
+.speed-dial.active .speed-dial-action:nth-child(4) {
+    transform: translateY(-10px);
+    transition-delay: 0.2s;
+}
+
+.speed-dial-action:hover {
+    transform: scale(1.2);
+    background: #667eea;
+    color: white;
+}
+
+/* Smart Notification System */
+.smart-notification {
+    position: fixed;
+    top: 20px;
+    right: -400px;
+    width: 360px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    transition: right 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 3000;
+    border-left: 4px solid #667eea;
+}
+
+.smart-notification.show {
+    right: 20px;
+}
+
+.smart-notification-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.smart-notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.smart-notification-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.smart-notification-close {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #999;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+
+.smart-notification-close:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+.smart-notification-body {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.smart-notification-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.smart-notification-action {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.smart-notification-action.primary {
+    background: #667eea;
+    color: white;
+}
+
+.smart-notification-action.secondary {
+    background: #f0f0f0;
+    color: #666;
+}
+
+/* Success Notification */
+.smart-notification.success {
+    border-left-color: #00a82d;
+}
+
+.smart-notification.success .smart-notification-icon {
+    background: linear-gradient(135deg, #00a82d 0%, #00c851 100%);
+}
+
+/* Error Notification */
+.smart-notification.error {
+    border-left-color: #dc3545;
+}
+
+.smart-notification.error .smart-notification-icon {
+    background: linear-gradient(135deg, #dc3545 0%, #ff6b6b 100%);
+}
+
+/* Warning Notification */
+.smart-notification.warning {
+    border-left-color: #ffc107;
+}
+
+.smart-notification.warning .smart-notification-icon {
+    background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+}
+
+/* Progress Ring Component */
+.progress-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.progress-ring svg {
+    transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+    fill: none;
+    stroke: #e9ecef;
+    stroke-width: 8;
+}
+
+.progress-ring-progress {
+    fill: none;
+    stroke: url(#gradient);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.progress-ring-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* Morphing Search Bar */
+.morphing-search {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.morphing-search.active {
+    width: 300px;
+}
+
+.morphing-search-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    padding: 0 50px 0 20px;
+    font-size: 16px;
+    background: white;
+    transition: all 0.3s;
+    opacity: 0;
+}
+
+.morphing-search.active .morphing-search-input {
+    opacity: 1;
+}
+
+.morphing-search-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.morphing-search.active .morphing-search-btn {
+    border-radius: 0 25px 25px 0;
+}
+
+/* Skeleton Pulse Effect */
+.skeleton-pulse {
+    position: relative;
+    overflow: hidden;
+    background: #f0f0f0;
+}
+
+.skeleton-pulse:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+    animation: skeleton-pulse 1.5s infinite;
+}
+
+@keyframes skeleton-pulse {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Glitch Text Effect */
+.glitch-text {
+    position: relative;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.glitch-text:before,
+.glitch-text:after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.glitch-text:before {
+    animation: glitch-1 0.3s infinite;
+    color: #f0f;
+    z-index: -1;
+}
+
+.glitch-text:after {
+    animation: glitch-2 0.3s infinite;
+    color: #0ff;
+    z-index: -2;
+}
+
+@keyframes glitch-1 {
+    0%, 100% { clip: rect(0, 900px, 0, 0); }
+    25% { clip: rect(random(100)px, 900px, random(100)px, 0); }
+    50% { clip: rect(random(100)px, 900px, random(100)px, 0); }
+    75% { clip: rect(random(100)px, 900px, random(100)px, 0); }
+}
+
+@keyframes glitch-2 {
+    0%, 100% { clip: rect(0, 900px, 0, 0); }
+    25% { clip: rect(random(100)px, 900px, random(100)px, 0); }
+    50% { clip: rect(random(100)px, 900px, random(100)px, 0); }
+    75% { clip: rect(random(100)px, 900px, random(100)px, 0); }
+}
+
+/* Particle Background */
+.particle-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(102, 126, 234, 0.5);
+    border-radius: 50%;
+    animation: float-particle 10s infinite;
+}
+
+@keyframes float-particle {
+    0%, 100% {
+        transform: translateY(0) translateX(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100vh) translateX(50px);
+        opacity: 0;
+    }
+}
+
+/* Magnetic Button Effect */
+.magnetic-btn {
+    position: relative;
+    padding: 14px 28px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.magnetic-btn:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    background: rgba(102, 126, 234, 0.3);
+    transform: translate(-50%, -50%);
+    transition: all 0.3s;
+    z-index: -1;
+}
+
+.magnetic-btn:hover:before {
+    width: 110%;
+    height: 110%;
+}
+
+/* Liquid Loader */
+.liquid-loader {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.liquid-loader svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.liquid-loader-path {
+    fill: none;
+    stroke: #667eea;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: liquid-load 2s infinite;
+}
+
+@keyframes liquid-load {
+    0% {
+        stroke-dashoffset: 100;
+    }
+    50% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: -100;
+    }
+}
+
+/* Dark Mode Support */
+body.dark-mode .smart-notification {
+    background: #2a2a2a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .smart-notification-title {
+    color: #e4e6eb;
+}
+
+body.dark-mode .smart-notification-body {
+    color: #b0b3b8;
+}
+
+body.dark-mode .morphing-search-input {
+    background: #2a2a2a;
+    border-color: #3e4042;
+    color: #e4e6eb;
+}
+
+body.dark-mode .speed-dial-action {
+    background: #2a2a2a;
+    color: #e4e6eb;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .smart-notification {
+        width: calc(100% - 40px);
+        right: -100%;
+    }
+    
+    .smart-notification.show {
+        right: 20px;
+    }
+    
+    .speed-dial {
+        bottom: 70px;
+        right: 20px;
+    }
+}
