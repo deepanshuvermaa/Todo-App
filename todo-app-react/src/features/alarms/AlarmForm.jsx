@@ -8,7 +8,7 @@ const AlarmForm = ({ onSave, onCancel, alarm = null }) => {
     message: alarm?.message || '',
     repeat: alarm?.repeat || 'once',
     customDays: alarm?.customDays || [],
-    sound: alarm?.sound || 'default',
+    soundType: alarm?.soundType || 'classic',
     enabled: alarm?.enabled ?? true
   });
 
@@ -31,10 +31,12 @@ const AlarmForm = ({ onSave, onCancel, alarm = null }) => {
   ];
 
   const soundOptions = [
-    { value: 'default', label: 'Default Beep' },
-    { value: 'gentle', label: 'Gentle Wake' },
+    { value: 'classic', label: 'Classic Beep' },
     { value: 'urgent', label: 'Urgent' },
-    { value: 'nature', label: 'Nature Sounds' }
+    { value: 'gentle', label: 'Gentle' },
+    { value: 'beep', label: 'Quick Beep' },
+    { value: 'siren', label: 'Siren' },
+    { value: 'bell', label: 'Bell' }
   ];
 
   const handleSubmit = (e) => {

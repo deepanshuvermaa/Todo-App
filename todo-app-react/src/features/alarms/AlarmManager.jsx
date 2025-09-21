@@ -5,6 +5,8 @@ import AlarmForm from './AlarmForm';
 import FlipClock from './FlipClock';
 import DigitalTimer from './DigitalTimer';
 import PomodoroTimer from './PomodoroTimer';
+import AlarmModal from './AlarmModal';
+import AlarmSoundManager from './AlarmSoundManager';
 
 const AlarmManager = () => {
   const { alarms, addAlarm, updateAlarm, deleteAlarm } = useAppStore();
@@ -12,8 +14,14 @@ const AlarmManager = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeAlarms, setActiveAlarms] = useState([]);
   const [viewMode, setViewMode] = useState('list'); // list, clock, digital, pomodoro
-  const [alarmSound, setAlarmSound] = useState(null);
-  const audioRef = useRef(null);
+  const [snoozedAlarms, setSnoozedAlarms] = useState(new Map());
+  const [alarmSettings, setAlarmSettings] = useState({
+    soundType: 'classic',
+    volume: 0.7,
+    snoozeEnabled: true,
+    vibrationEnabled: true
+  });
+  const soundManagerRef = useRef(AlarmSoundManager);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -32,6 +40,10 @@ const AlarmManager = () => {
       alarms.forEach(alarm => {
         if (!alarm.enabled || activeAlarms.includes(alarm.id)) return;
 
+        // Check if alarm is snoozed
+        const snoozeInfo = snoozedAlarms.get(alarm.id);
+        if (snoozeInfo && now < snoozeInfo.wakeTime) return;
+
         const alarmTime = alarm.time;
         const shouldRing = alarm.repeat === 'once' ||
           (alarm.repeat === 'daily') ||
@@ -43,38 +55,115 @@ const AlarmManager = () => {
           triggerAlarm(alarm);
         }
       });
+
+      // Check snoozed alarms
+      snoozedAlarms.forEach((snoozeInfo, alarmId) => {
+        if (now >= snoozeInfo.wakeTime) {
+          const alarm = alarms.find(a => a.id === alarmId);
+          if (alarm && alarm.enabled) {
+            setSnoozedAlarms(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(alarmId);
+              return newMap;
+            });
+            triggerAlarm(alarm);
+          }
+        }
+      });
     };
 
     checkAlarms();
-  }, [currentTime, alarms, activeAlarms]);
+  }, [currentTime, alarms, activeAlarms, snoozedAlarms]);
 
-  const triggerAlarm = (alarm) => {
+  const triggerAlarm = async (alarm) => {
+    console.log('🚨 Triggering alarm:', alarm.label || alarm.id);
     setActiveAlarms(prev => [...prev, alarm.id]);
 
-    // Play alarm sound
-    if (audioRef.current) {
-      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+    // Start continuous alarm sound
+    try {
+      await soundManagerRef.current.startAlarm(
+        alarm.soundType || alarmSettings.soundType,
+        alarmSettings.volume
+      );
+    } catch (error) {
+      console.error('Failed to start alarm sound:', error);
     }
 
-    // Show notification
+    // Start vibration if enabled
+    if (alarmSettings.vibrationEnabled) {
+      soundManagerRef.current.startVibratingAlarm();
+    }
+
+    // Show browser notification
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(alarm.label || 'Alarm', {
-        body: alarm.message || 'Time for your reminder!',
-        icon: '/favicon.ico'
+      const notification = new Notification(alarm.label || 'Alarm', {
+        body: alarm.message || 'Your alarm is ringing!',
+        icon: '/Todo-App/vite.svg',
+        requireInteraction: true,
+        silent: false
       });
+
+      notification.onclick = () => {
+        window.focus();
+        dismissAlarm(alarm.id);
+        notification.close();
+      };
     }
 
-    // Auto-dismiss after 1 minute if not manually dismissed
+    // Keep device awake (prevent screen sleep)
+    if ('wakeLock' in navigator) {
+      try {
+        await navigator.wakeLock.request('screen');
+      } catch (err) {
+        console.log('Wake lock failed:', err);
+      }
+    }
+
+    // Auto-dismiss after 10 minutes if not manually dismissed (safety feature)
     setTimeout(() => {
-      dismissAlarm(alarm.id);
-    }, 60000);
+      if (activeAlarms.includes(alarm.id)) {
+        console.log('Auto-dismissing alarm after 10 minutes');
+        dismissAlarm(alarm.id);
+      }
+    }, 10 * 60 * 1000);
   };
 
   const dismissAlarm = (alarmId) => {
+    console.log('🔇 Dismissing alarm:', alarmId);
     setActiveAlarms(prev => prev.filter(id => id !== alarmId));
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    soundManagerRef.current.stopAlarm();
+
+    // Clear any snoozed state
+    setSnoozedAlarms(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(alarmId);
+      return newMap;
+    });
+
+    // If it's a "once" alarm, disable it after dismissal
+    const alarm = alarms.find(a => a.id === alarmId);
+    if (alarm && alarm.repeat === 'once') {
+      updateAlarm(alarmId, { ...alarm, enabled: false });
+    }
+  };
+
+  const snoozeAlarm = (alarmId, minutes = 5) => {
+    console.log(`😴 Snoozing alarm ${alarmId} for ${minutes} minutes`);
+
+    // Stop current alarm
+    setActiveAlarms(prev => prev.filter(id => id !== alarmId));
+    soundManagerRef.current.stopAlarm();
+
+    // Set snooze time
+    const wakeTime = new Date(Date.now() + minutes * 60 * 1000);
+    setSnoozedAlarms(prev => new Map(prev).set(alarmId, { wakeTime, minutes }));
+
+    // Show snooze notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`Alarm Snoozed`, {
+        body: `Will ring again in ${minutes} minutes at ${wakeTime.toTimeString().slice(0, 5)}`,
+        icon: '/Todo-App/vite.svg'
+      });
     }
   };
 
@@ -126,55 +215,25 @@ const AlarmManager = () => {
           if (!alarm) return null;
 
           return (
-            <motion.div
+            <AlarmModal
               key={alarmId}
-              initial={{ opacity: 0, scale: 0.8, y: -50 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: -50 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            >
-              <motion.div
-                animate={{
-                  scale: [1, 1.05, 1],
-                  backgroundColor: ['#ef4444', '#dc2626', '#ef4444']
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="bg-red-500 text-white p-8 rounded-xl shadow-2xl max-w-md mx-4 text-center"
-              >
-                <div className="text-6xl mb-4">⏰</div>
-                <h2 className="text-2xl font-bold mb-2">{alarm.label || 'Alarm'}</h2>
-                <p className="text-xl mb-2">{formatTime(alarm.time)}</p>
-                {alarm.message && (
-                  <p className="text-lg mb-6">{alarm.message}</p>
-                )}
-                <button
-                  onClick={() => dismissAlarm(alarmId)}
-                  className="bg-white text-red-500 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-                >
-                  Dismiss
-                </button>
-              </motion.div>
-            </motion.div>
+              alarm={alarm}
+              onDismiss={dismissAlarm}
+              onSnooze={snoozeAlarm}
+              formatTime={formatTime}
+            />
           );
         })}
       </AnimatePresence>
     );
   };
 
+  const testAlarmSound = (soundType) => {
+    soundManagerRef.current.playTestSound(soundType, 3000);
+  };
+
   return (
     <div className="alarm-manager">
-      <audio
-        ref={audioRef}
-        loop
-        preload="auto"
-      >
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCjiS1fPMeDEFJHfJ8N2QQAoUXrPp66hVFApGnt/yv2whCji" type="audio/wav" />
-      </audio>
-
       {renderActiveAlarms()}
 
       <div className="mb-6">
@@ -229,12 +288,85 @@ const AlarmManager = () => {
           )}
         </div>
 
-        <button
-          onClick={requestNotificationPermission}
-          className="text-sm text-blue-600 hover:text-blue-700 mb-4"
-        >
-          Enable notifications for better alarm experience
-        </button>
+        <div className="flex flex-col items-center gap-3 mb-4">
+          <button
+            onClick={requestNotificationPermission}
+            className="text-sm text-blue-600 hover:text-blue-700"
+          >
+            Enable notifications for better alarm experience
+          </button>
+
+          {/* Alarm Settings */}
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 w-full max-w-2xl">
+            <h3 className="text-sm font-semibold mb-3 text-center">Alarm Settings</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Sound Type Selection */}
+              <div>
+                <label className="block text-xs font-medium mb-2">Sound Type</label>
+                <select
+                  value={alarmSettings.soundType}
+                  onChange={(e) => setAlarmSettings(prev => ({ ...prev, soundType: e.target.value }))}
+                  className="w-full px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {soundManagerRef.current.getSoundTypes().map(type => (
+                    <option key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => testAlarmSound(alarmSettings.soundType)}
+                  className="mt-1 w-full text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 py-1 px-2 rounded transition-colors"
+                >
+                  Test Sound
+                </button>
+              </div>
+
+              {/* Volume Control */}
+              <div>
+                <label className="block text-xs font-medium mb-2">
+                  Volume: {Math.round(alarmSettings.volume * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1"
+                  step="0.1"
+                  value={alarmSettings.volume}
+                  onChange={(e) => {
+                    const volume = parseFloat(e.target.value);
+                    setAlarmSettings(prev => ({ ...prev, volume }));
+                    soundManagerRef.current.setVolume(volume);
+                  }}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Toggle Options */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={alarmSettings.vibrationEnabled}
+                    onChange={(e) => setAlarmSettings(prev => ({ ...prev, vibrationEnabled: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span>Vibration</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={alarmSettings.snoozeEnabled}
+                    onChange={(e) => setAlarmSettings(prev => ({ ...prev, snoozeEnabled: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span>Snooze Option</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -284,6 +416,24 @@ const AlarmManager = () => {
                             .join(', ')})</span>
                         )}
                       </div>
+
+                      {/* Snooze Status */}
+                      {snoozedAlarms.has(alarm.id) && (
+                        <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 flex items-center gap-1">
+                          <span>😴</span>
+                          <span>
+                            Snoozed until {snoozedAlarms.get(alarm.id).wakeTime.toTimeString().slice(0, 5)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Active Status */}
+                      {activeAlarms.includes(alarm.id) && (
+                        <div className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+                          <span>🔥</span>
+                          <span>Currently ringing!</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
