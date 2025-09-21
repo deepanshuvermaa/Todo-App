@@ -143,12 +143,21 @@ const useAppStore = create(
           },
 
           // Task Management
-          addTask: async (taskText) => {
+          addTask: async (taskData) => {
+            // Handle both string and object inputs for backward compatibility
+            const isString = typeof taskData === 'string';
             const todayStr = new Date().toISOString().split('T')[0];
+
             const newTask = {
               id: Date.now().toString(),
-              text: taskText,
-              date: todayStr,
+              text: isString ? taskData : taskData.text,
+              date: isString ? todayStr : (taskData.date || todayStr),
+              time: isString ? null : taskData.time,
+              priority: isString ? 'medium' : (taskData.priority || 'medium'),
+              duration: isString ? null : taskData.duration,
+              location: isString ? null : taskData.location,
+              tags: isString ? [] : (taskData.tags || []),
+              category: isString ? null : taskData.category,
               completed: false,
               createdAt: new Date().toISOString()
             };

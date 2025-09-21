@@ -73,13 +73,70 @@ const TaskCard = ({ task, onToggle, onUpdate, onDelete }) => {
             </p>
           )}
 
-          {/* Task Meta */}
+          {/* Enhanced Task Meta */}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {/* Priority Badge */}
+            {task.priority && task.priority !== 'medium' && (
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                task.priority === 'high'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+              }`}>
+                {task.priority === 'high' ? '🔥 High' : '🟢 Low'}
+              </span>
+            )}
+
+            {/* Time Badge */}
+            {task.time && (
+              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 rounded-full">
+                🕐 {task.time}
+              </span>
+            )}
+
+            {/* Location Badge */}
+            {task.location && (
+              <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 rounded-full">
+                📍 {task.location}
+              </span>
+            )}
+
+            {/* Duration Badge */}
+            {task.duration && (
+              <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 rounded-full">
+                ⏱️ {task.duration}min
+              </span>
+            )}
+
+            {/* Category Badge */}
+            {task.category && (
+              <span className="px-2 py-1 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400 rounded-full">
+                📁 {task.category}
+              </span>
+            )}
+
+            {/* Tags */}
+            {task.tags && task.tags.length > 0 && (
+              task.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-full"
+                >
+                  #{tag}
+                </span>
+              ))
+            )}
+          </div>
+
+          {/* Date info */}
           <div className="flex gap-4 mt-2 text-xs text-gray-400">
             <span>Created: {new Date(task.createdAt).toLocaleTimeString()}</span>
             {task.completed && task.completedDate && (
               <span>
                 Completed: {new Date(task.completedDate).toLocaleTimeString()}
               </span>
+            )}
+            {task.date !== new Date().toISOString().split('T')[0] && (
+              <span>Due: {new Date(task.date).toLocaleDateString()}</span>
             )}
           </div>
         </div>

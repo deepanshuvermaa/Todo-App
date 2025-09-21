@@ -32,7 +32,9 @@
       "Bash(npm run build:*)",
       "Bash(timeout 5 npm run dev)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(robocopy:*)",
+      "Bash(copy:*)"
     ],
     "deny": [],
     "ask": []
