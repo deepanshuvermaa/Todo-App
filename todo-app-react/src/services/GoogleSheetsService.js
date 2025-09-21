@@ -68,15 +68,26 @@ class GoogleSheetsService {
                 console.log('Google API client initialized');
 
                 // Initialize Google Identity Services client
-                this._initializeGISClient();
+                try {
+                    this._initializeGISClient();
+                } catch (gisError) {
+                    console.warn('Google Identity Services initialization failed:', gisError);
+                    // Continue without authentication - app can work offline
+                }
 
                 // Check for existing authentication
-                this._checkExistingAuth();
+                try {
+                    this._checkExistingAuth();
+                } catch (authError) {
+                    console.warn('Existing auth check failed:', authError);
+                }
 
                 resolve(true);
             } catch (error) {
                 console.error('Failed to initialize Google API client:', error);
-                reject(error);
+                // Don't reject - allow app to work offline
+                console.warn('App will work in offline mode');
+                resolve(false);
             }
         });
     }
@@ -149,9 +160,11 @@ class GoogleSheetsService {
         localStorage.setItem('tokenExpiry', expiryTime.toString());
 
         // Set the access token for API calls
-        this.gapi.client.setToken({
-            access_token: this.accessToken
-        });
+        if (this.gapi?.client?.setToken) {
+            this.gapi.client.setToken({
+                access_token: this.accessToken
+            });
+        }
 
         try {
             // Get user info
@@ -165,10 +178,18 @@ class GoogleSheetsService {
                 this.currentUser = await userResponse.json();
                 localStorage.setItem('userEmail', this.currentUser.email);
                 console.log('User authenticated:', this.currentUser.email);
+            } else {
+                console.warn('Failed to get user info, but continuing with authentication');
             }
 
             // Setup or find existing sheet
-            await this._setupSheet();
+            try {
+                await this._setupSheet();
+            } catch (sheetError) {
+                console.error('Error setting up sheet:', sheetError);
+                // Continue anyway - data will be stored locally
+                console.warn('Google Sheets sync disabled - data will be stored locally only');
+            }
 
             this._notifyAuthStateChange();
 
@@ -177,7 +198,13 @@ class GoogleSheetsService {
             }
         } catch (error) {
             console.error('Error during authentication setup:', error);
-            if (this.signInReject) {
+            // Still mark as signed in if we have an access token
+            if (this.accessToken) {
+                this._notifyAuthStateChange();
+                if (this.signInResolve) {
+                    this.signInResolve({ email: 'unknown@gmail.com' });
+                }
+            } else if (this.signInReject) {
                 this.signInReject(error);
             }
         }
