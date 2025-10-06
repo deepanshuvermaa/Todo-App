@@ -97,15 +97,31 @@ class GoogleSheetsService {
             throw new Error('Google Identity Services not available');
         }
 
+        // Suppress COOP warnings in console (expected on GitHub Pages)
+        const originalWarn = console.warn;
+        console.warn = (...args) => {
+            const message = args[0]?.toString() || '';
+            if (!message.includes('Cross-Origin-Opener-Policy')) {
+                originalWarn.apply(console, args);
+            }
+        };
+
         this.client = this.google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CONFIG.CLIENT_ID,
             scope: GOOGLE_CONFIG.SCOPES,
             callback: (response) => {
                 this._handleAuthResponse(response);
-            }
+            },
+            // Use popup mode (default) which works better on GitHub Pages
+            ux_mode: 'popup',
+            // Request consent on first auth
+            prompt: ''
         });
 
-        console.log('Google Identity Services client initialized');
+        // Restore console.warn
+        console.warn = originalWarn;
+
+        console.log('✅ Google Identity Services client initialized (GitHub Pages mode)');
     }
 
     async _checkExistingAuth() {
