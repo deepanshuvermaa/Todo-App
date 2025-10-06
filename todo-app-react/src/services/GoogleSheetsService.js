@@ -27,10 +27,17 @@ class GoogleSheetsService {
             if (typeof window.gapi === 'undefined') {
                 const script = document.createElement('script');
                 script.src = 'https://apis.google.com/js/api.js';
+                script.async = true;
+                script.defer = true;
                 script.onload = () => {
+                    console.log('✅ Google API script loaded');
                     this._loadGoogleIdentityServices(resolve, reject);
                 };
-                script.onerror = () => reject(new Error('Failed to load Google API'));
+                script.onerror = (error) => {
+                    console.error('❌ Failed to load Google API script:', error);
+                    this.isInitialized = false;
+                    reject(new Error('Failed to load Google API - check internet connection'));
+                };
                 document.head.appendChild(script);
             } else {
                 this._loadGoogleIdentityServices(resolve, reject);
@@ -43,10 +50,17 @@ class GoogleSheetsService {
         if (typeof window.google === 'undefined') {
             const script = document.createElement('script');
             script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
             script.onload = () => {
+                console.log('✅ Google Identity Services script loaded');
                 this._initializeGoogleAPI(resolve, reject);
             };
-            script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
+            script.onerror = (error) => {
+                console.error('❌ Failed to load Google Identity Services:', error);
+                this.isInitialized = false;
+                reject(new Error('Failed to load Google Identity Services - check internet connection'));
+            };
             document.head.appendChild(script);
         } else {
             this._initializeGoogleAPI(resolve, reject);
@@ -205,8 +219,16 @@ class GoogleSheetsService {
     }
 
     async signIn() {
+        if (!this.isInitialized) {
+            throw new Error('Google Sheets service not initialized. Please refresh the page and try again.');
+        }
+
         if (!this.client) {
-            throw new Error('Google client not initialized');
+            throw new Error('Google client not initialized. Please refresh the page and try again.');
+        }
+
+        if (!this.gapi?.client) {
+            throw new Error('Google API client not ready. Please refresh the page and try again.');
         }
 
         return new Promise((resolve, reject) => {

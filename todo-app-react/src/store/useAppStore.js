@@ -113,9 +113,9 @@ const useAppStore = create(
                 alarms: alarms || [],
                 movies: movies || [],
                 darkMode: darkMode === 'enabled',
-                userEmail,
-                sheetId,
-                sheetUrl,
+                userEmail: userEmail && userEmail !== 'undefined' ? userEmail : null,
+                sheetId: sheetId && sheetId !== 'undefined' ? sheetId : null,
+                sheetUrl: sheetUrl && sheetUrl !== 'undefined' ? sheetUrl : null,
                 isLoading: false
               });
 
