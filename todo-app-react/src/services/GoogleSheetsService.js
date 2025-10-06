@@ -371,68 +371,68 @@ class GoogleSheetsService {
     }
 
     async _setupSheet() {
-        try {
-            // Load Drive API with retry logic
-            await this._loadDriveAPIWithRetry();
+        // Load Drive API with retry logic
+        await this._loadDriveAPIWithRetry();
 
-            // First check if we have a stored sheet ID for "LIFE Data"
-            const storedSheetId = localStorage.getItem('lifeDataSheetId');
+        // First check if we have a stored sheet ID for "LIFE Data"
+        const storedSheetId = localStorage.getItem('lifeDataSheetId');
 
-            if (storedSheetId) {
-                // Verify the stored sheet still exists and is accessible
-                try {
-                    const fileResponse = await this.gapi.client.drive.files.get({
-                        fileId: storedSheetId,
-                        fields: 'id, name, trashed'
-                    });
+        if (storedSheetId) {
+            // Verify the stored sheet still exists and is accessible
+            try {
+                const fileResponse = await this.gapi.client.drive.files.get({
+                    fileId: storedSheetId,
+                    fields: 'id, name, trashed'
+                });
 
-                    if (fileResponse.result && !fileResponse.result.trashed &&
-                        fileResponse.result.name === GOOGLE_CONFIG.SHEET_NAME) {
-                        // Use the stored sheet
-                        this.sheetId = storedSheetId;
-                        console.log('Connected to existing LIFE Data sheet:', this.sheetId);
+                if (fileResponse.result && !fileResponse.result.trashed &&
+                    fileResponse.result.name === GOOGLE_CONFIG.SHEET_NAME) {
+                    // Use the stored sheet
+                    this.sheetId = storedSheetId;
+                    localStorage.setItem('sheetId', this.sheetId); // Keep for backward compatibility
+                    console.log('✅ Connected to existing LIFE Data sheet:', this.sheetId);
 
-                        // Verify sheet structure
-                        await this._ensureSheetStructure();
-                        return;
-                    } else {
-                        // Stored sheet is invalid, clear it
-                        localStorage.removeItem('lifeDataSheetId');
-                        console.log('Stored sheet was invalid, searching for LIFE Data sheet...');
-                    }
-                } catch (e) {
-                    // Stored sheet doesn't exist or not accessible
+                    // Verify and fix sheet structure if needed
+                    await this._ensureSheetStructure();
+                    return;
+                } else {
+                    // Stored sheet is invalid, clear it
                     localStorage.removeItem('lifeDataSheetId');
-                    console.log('Stored sheet not found, searching for LIFE Data sheet...');
+                    localStorage.removeItem('sheetId');
+                    console.log('⚠️ Stored sheet was invalid, searching for LIFE Data sheet...');
                 }
+            } catch (e) {
+                // Stored sheet doesn't exist or not accessible
+                localStorage.removeItem('lifeDataSheetId');
+                localStorage.removeItem('sheetId');
+                console.log('⚠️ Stored sheet not accessible, searching for LIFE Data sheet...');
             }
-
-            // Search for existing "LIFE Data" sheet
-            const searchResponse = await this.gapi.client.drive.files.list({
-                q: `name='${GOOGLE_CONFIG.SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
-                fields: 'files(id, name)',
-                orderBy: 'createdTime desc'
-            });
-
-            if (searchResponse.result.files && searchResponse.result.files.length > 0) {
-                // Use the first (most recent) "LIFE Data" sheet found
-                this.sheetId = searchResponse.result.files[0].id;
-                localStorage.setItem('lifeDataSheetId', this.sheetId);
-                localStorage.setItem('sheetId', this.sheetId); // Keep for backward compatibility
-                console.log('Found and connected to existing LIFE Data sheet:', this.sheetId);
-
-                // Verify sheet structure
-                await this._ensureSheetStructure();
-            } else {
-                // No existing "LIFE Data" sheet found, create one
-                console.log('No LIFE Data sheet found, creating new one...');
-                await this._createNewSheet();
-            }
-        } catch (error) {
-            console.error('Error setting up sheet:', error);
-            // Don't throw - allow offline mode
-            console.warn('Sheet setup failed, app will work in offline mode');
         }
+
+        // Search for existing "LIFE Data" sheet in user's Drive
+        console.log('🔍 Searching for existing LIFE Data sheet...');
+        const searchResponse = await this.gapi.client.drive.files.list({
+            q: `name='${GOOGLE_CONFIG.SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
+            fields: 'files(id, name)',
+            orderBy: 'createdTime desc'
+        });
+
+        if (searchResponse.result.files && searchResponse.result.files.length > 0) {
+            // Use the first (most recent) "LIFE Data" sheet found
+            this.sheetId = searchResponse.result.files[0].id;
+            localStorage.setItem('lifeDataSheetId', this.sheetId);
+            localStorage.setItem('sheetId', this.sheetId);
+            console.log('✅ Found existing LIFE Data sheet:', this.sheetId);
+
+            // Verify and fix sheet structure if needed
+            await this._ensureSheetStructure();
+        } else {
+            // No existing "LIFE Data" sheet found, create one
+            console.log('📝 No LIFE Data sheet found, creating new sheet...');
+            await this._createNewSheet();
+        }
+
+        console.log('✅ Sheet setup complete. Sheet ID:', this.sheetId);
     }
 
     async _createNewSheet() {
@@ -468,13 +468,14 @@ class GoogleSheetsService {
             // Setup headers for each sheet
             await this._initializeSheetHeaders();
 
-            console.log('Created new LIFE Data sheet:', this.sheetId);
+            console.log('✅ Created new LIFE Data sheet:', this.sheetId);
             const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.sheetId}`;
-            console.log('Sheet URL:', spreadsheetUrl);
-            console.log('This sheet will be used for all future syncs');
+            console.log('📊 Sheet URL:', spreadsheetUrl);
+            console.log('💾 This sheet will be used for all future syncs');
+            console.log('📤 Your offline data will now be synced to this sheet');
 
         } catch (error) {
-            console.error('Error creating new sheet:', error);
+            console.error('❌ Error creating new sheet:', error);
             throw error;
         }
     }

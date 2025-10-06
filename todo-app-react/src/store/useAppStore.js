@@ -710,16 +710,22 @@ const useAppStore = create(
               await storage.set('userSheetId', authState.sheetId);
               await storage.set('userSheetUrl', googleSheetsService.getSheetUrl());
 
-              // Perform initial sync
+              // Perform initial sync to upload all offline data to the sheet
               try {
-                await get().syncToSheets();
+                console.log('📤 Starting initial sync of offline data to Google Sheets...');
+                const syncSuccess = await get().syncToSheets();
+                if (syncSuccess) {
+                  console.log('✅ Initial sync completed - all offline data uploaded to sheet');
+                } else {
+                  console.warn('⚠️ Initial sync returned false but no error thrown');
+                }
               } catch (syncError) {
-                console.error('Initial sync failed:', syncError);
+                console.error('❌ Initial sync failed:', syncError);
                 set({
                   syncStatus: 'failed',
                   lastSyncError: syncError.message
                 });
-                // Don't throw - authentication was successful
+                // Don't throw - authentication was successful, user can manually retry sync
               }
 
               return user;
@@ -957,13 +963,19 @@ const useAppStore = create(
               ];
 
               // Sync each data type
+              console.log(`📊 Syncing ${dataMappings.length} data types to Google Sheets...`);
+              let syncedCount = 0;
               for (const mapping of dataMappings) {
+                const itemCount = mapping.data?.length || 0;
+                console.log(`  → ${mapping.sheetName}: ${itemCount} items`);
                 await googleSheetsService.syncDataToSheet(
                   mapping.sheetName,
                   mapping.data,
                   mapping.headers
                 );
+                syncedCount++;
               }
+              console.log(`✅ Synced ${syncedCount}/${dataMappings.length} sheets successfully`);
 
               set({
                 syncStatus: 'success',
