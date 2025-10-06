@@ -99,29 +99,45 @@ class GoogleSheetsService {
 
         // Suppress COOP warnings in console (expected on GitHub Pages)
         const originalWarn = console.warn;
+        const originalError = console.error;
+
         console.warn = (...args) => {
             const message = args[0]?.toString() || '';
-            if (!message.includes('Cross-Origin-Opener-Policy')) {
+            if (!message.includes('Cross-Origin-Opener-Policy') &&
+                !message.includes('window.opener')) {
                 originalWarn.apply(console, args);
             }
         };
 
-        this.client = this.google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CONFIG.CLIENT_ID,
-            scope: GOOGLE_CONFIG.SCOPES,
-            callback: (response) => {
-                this._handleAuthResponse(response);
-            },
-            // Use popup mode (default) which works better on GitHub Pages
-            ux_mode: 'popup',
-            // Request consent on first auth
-            prompt: ''
-        });
+        console.error = (...args) => {
+            const message = args[0]?.toString() || '';
+            if (!message.includes('Cross-Origin-Opener-Policy') &&
+                !message.includes('window.opener')) {
+                originalError.apply(console, args);
+            }
+        };
 
-        // Restore console.warn
-        console.warn = originalWarn;
+        try {
+            this.client = this.google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CONFIG.CLIENT_ID,
+                scope: GOOGLE_CONFIG.SCOPES,
+                callback: (response) => {
+                    this._handleAuthResponse(response);
+                },
+                error_callback: (error) => {
+                    console.error('OAuth error:', error);
+                    if (this.signInReject) {
+                        this.signInReject(new Error(error.type || 'OAuth failed'));
+                    }
+                }
+            });
 
-        console.log('✅ Google Identity Services client initialized (GitHub Pages mode)');
+            console.log('✅ Google Identity Services client initialized');
+        } finally {
+            // Restore console methods
+            console.warn = originalWarn;
+            console.error = originalError;
+        }
     }
 
     async _checkExistingAuth() {
