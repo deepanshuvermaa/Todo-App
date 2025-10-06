@@ -108,25 +108,71 @@ class GoogleSheetsService {
         console.log('Google Identity Services client initialized');
     }
 
-    _checkExistingAuth() {
+    async _checkExistingAuth() {
         const storedToken = localStorage.getItem('googleAccessToken');
         const tokenExpiry = localStorage.getItem('tokenExpiry');
         const userEmail = localStorage.getItem('userEmail');
         const sheetId = localStorage.getItem('sheetId');
 
-        if (storedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
-            this.accessToken = storedToken;
-            this.isSignedIn = true;
-            this.currentUser = { email: userEmail };
-            this.sheetId = sheetId;
+        // Check if token exists and hasn't expired
+        if (!storedToken || !tokenExpiry || Date.now() >= parseInt(tokenExpiry)) {
+            console.log('No valid stored authentication found');
+            this._clearAuthState();
+            return;
+        }
 
-            // Set the access token for API calls
+        // Validate token by testing API call
+        try {
+            this.accessToken = storedToken;
             this.gapi.client.setToken({
                 access_token: this.accessToken
             });
 
-            console.log('Restored existing Google authentication');
+            // Validate token with a lightweight API call
+            const response = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + storedToken);
+
+            if (!response.ok) {
+                throw new Error('Token validation failed');
+            }
+
+            const tokenInfo = await response.json();
+
+            // Check if token is still valid
+            if (tokenInfo.expires_in <= 0) {
+                throw new Error('Token expired');
+            }
+
+            // Token is valid, restore authentication state
+            this.isSignedIn = true;
+            this.currentUser = { email: userEmail };
+            this.sheetId = sheetId;
+
+            console.log('✅ Restored valid Google authentication:', userEmail);
             this._notifyAuthStateChange();
+
+        } catch (error) {
+            console.warn('⚠️ Stored token validation failed:', error.message);
+            this._clearAuthState();
+        }
+    }
+
+    _clearAuthState() {
+        // Clear stored authentication
+        localStorage.removeItem('googleAccessToken');
+        localStorage.removeItem('tokenExpiry');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('sheetId');
+        localStorage.removeItem('lifeDataSheetId');
+
+        // Clear current state
+        this.accessToken = null;
+        this.isSignedIn = false;
+        this.currentUser = null;
+        this.sheetId = null;
+
+        // Clear API token
+        if (this.gapi?.client) {
+            this.gapi.client.setToken(null);
         }
     }
 
@@ -144,15 +190,28 @@ class GoogleSheetsService {
 
     async _handleAuthResponse(response) {
         if (response.error) {
-            console.error('Authentication error:', response.error);
+            console.error('❌ Authentication error:', response.error);
+
+            // Clear any partial auth state
+            this.accessToken = null;
+            this.isSignedIn = false;
+            this.currentUser = null;
+
             if (this.signInReject) {
                 this.signInReject(new Error(response.error));
             }
             return;
         }
 
+        if (!response.access_token) {
+            console.error('❌ No access token received');
+            if (this.signInReject) {
+                this.signInReject(new Error('No access token received'));
+            }
+            return;
+        }
+
         this.accessToken = response.access_token;
-        this.isSignedIn = true;
 
         // Store token with expiry (default 1 hour)
         const expiryTime = Date.now() + (3600 * 1000);
@@ -164,31 +223,50 @@ class GoogleSheetsService {
             this.gapi.client.setToken({
                 access_token: this.accessToken
             });
+        } else {
+            console.error('❌ GAPI client not available');
+            if (this.signInReject) {
+                this.signInReject(new Error('Google API client not initialized'));
+            }
+            return;
         }
 
         try {
-            // Get user info
+            // Validate token by getting user info
             const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
                 headers: {
                     'Authorization': `Bearer ${this.accessToken}`
                 }
             });
 
-            if (userResponse.ok) {
-                this.currentUser = await userResponse.json();
-                localStorage.setItem('userEmail', this.currentUser.email);
-                console.log('User authenticated:', this.currentUser.email);
-            } else {
-                console.warn('Failed to get user info, but continuing with authentication');
+            if (!userResponse.ok) {
+                throw new Error(`Failed to get user info: ${userResponse.status} ${userResponse.statusText}`);
             }
+
+            this.currentUser = await userResponse.json();
+            localStorage.setItem('userEmail', this.currentUser.email);
+            console.log('✅ User authenticated:', this.currentUser.email);
+
+            // Only mark as signed in after successful token validation
+            this.isSignedIn = true;
 
             // Setup or find existing sheet
             try {
                 await this._setupSheet();
+                console.log('✅ Sheet setup complete');
             } catch (sheetError) {
-                console.error('Error setting up sheet:', sheetError);
-                // Continue anyway - data will be stored locally
-                console.warn('Google Sheets sync disabled - data will be stored locally only');
+                console.error('❌ Error setting up sheet:', sheetError);
+
+                // Revert authentication state if sheet setup fails
+                this.isSignedIn = false;
+                this.sheetId = null;
+
+                // Clear stored state
+                localStorage.removeItem('googleAccessToken');
+                localStorage.removeItem('tokenExpiry');
+                localStorage.removeItem('userEmail');
+
+                throw new Error(`Sheet setup failed: ${sheetError.message || sheetError}`);
             }
 
             this._notifyAuthStateChange();
@@ -197,15 +275,42 @@ class GoogleSheetsService {
                 this.signInResolve(this.currentUser);
             }
         } catch (error) {
-            console.error('Error during authentication setup:', error);
-            // Still mark as signed in if we have an access token
-            if (this.accessToken) {
-                this._notifyAuthStateChange();
-                if (this.signInResolve) {
-                    this.signInResolve({ email: 'unknown@gmail.com' });
-                }
-            } else if (this.signInReject) {
+            console.error('❌ Error during authentication setup:', error);
+
+            // Clear authentication state on any error
+            this.accessToken = null;
+            this.isSignedIn = false;
+            this.currentUser = null;
+            this.sheetId = null;
+
+            if (this.gapi?.client) {
+                this.gapi.client.setToken(null);
+            }
+
+            if (this.signInReject) {
                 this.signInReject(error);
+            }
+        }
+    }
+
+    async _loadDriveAPIWithRetry(maxRetries = 3, delayMs = 1000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`Loading Drive API (attempt ${attempt}/${maxRetries})...`);
+                await this.gapi.client.load('drive', 'v3');
+                console.log('✅ Drive API loaded successfully');
+                return;
+            } catch (error) {
+                console.error(`❌ Drive API load failed (attempt ${attempt}/${maxRetries}):`, error);
+
+                if (attempt === maxRetries) {
+                    throw new Error(`Failed to load Drive API after ${maxRetries} attempts: ${error.message}`);
+                }
+
+                // Exponential backoff
+                const waitTime = delayMs * Math.pow(2, attempt - 1);
+                console.log(`Retrying in ${waitTime}ms...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
             }
         }
     }
@@ -235,7 +340,8 @@ class GoogleSheetsService {
 
     async _setupSheet() {
         try {
-            await this.gapi.client.load('drive', 'v3');
+            // Load Drive API with retry logic
+            await this._loadDriveAPIWithRetry();
 
             // First check if we have a stored sheet ID for "LIFE Data"
             const storedSheetId = localStorage.getItem('lifeDataSheetId');
@@ -467,11 +573,17 @@ class GoogleSheetsService {
     // Sync methods for different data types
     async syncDataToSheet(sheetName, data, headers) {
         if (!this.isSignedIn || !this.sheetId) {
-            console.warn('Not authenticated or no sheet ID');
-            return false;
+            console.warn(`Cannot sync ${sheetName}: Not authenticated or no sheet ID`);
+            throw new Error('Not authenticated with Google Sheets');
         }
 
         try {
+            // Validate sheet access
+            await this.gapi.client.sheets.spreadsheets.get({
+                spreadsheetId: this.sheetId,
+                ranges: [`${sheetName}!A1:A1`]
+            });
+
             // Clear existing data
             await this.gapi.client.sheets.spreadsheets.values.clear({
                 spreadsheetId: this.sheetId,
@@ -479,6 +591,7 @@ class GoogleSheetsService {
             });
 
             if (data.length === 0) {
+                console.log(`✅ Cleared ${sheetName} (no data to sync)`);
                 return true;
             }
 
@@ -486,10 +599,10 @@ class GoogleSheetsService {
             const rows = data.map(item => {
                 return headers.map(header => {
                     const value = item[header.key];
-                    if (typeof value === 'object') {
+                    if (typeof value === 'object' && value !== null) {
                         return JSON.stringify(value);
                     }
-                    return value || '';
+                    return value !== undefined && value !== null ? String(value) : '';
                 });
             });
 
@@ -506,8 +619,8 @@ class GoogleSheetsService {
             console.log(`✅ Synced ${data.length} items to ${sheetName}`);
             return true;
         } catch (error) {
-            console.error(`Error syncing to ${sheetName}:`, error);
-            return false;
+            console.error(`❌ Error syncing to ${sheetName}:`, error);
+            throw error;
         }
     }
 

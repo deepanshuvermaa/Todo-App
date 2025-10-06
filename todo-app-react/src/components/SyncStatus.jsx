@@ -9,6 +9,7 @@ const SyncStatus = () => {
     userEmail,
     sheetUrl,
     lastSyncTime,
+    lastSyncError,
     signInToGoogle,
     signOutFromGoogle,
     syncToSheets,
@@ -187,6 +188,13 @@ const SyncStatus = () => {
 
             {isAuthenticated ? (
               <div className="space-y-2">
+                {lastSyncError && (
+                  <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-400">
+                    <div className="font-semibold mb-1">Sync Error:</div>
+                    {lastSyncError}
+                  </div>
+                )}
+
                 {sheetUrl && (
                   <a
                     href={sheetUrl}

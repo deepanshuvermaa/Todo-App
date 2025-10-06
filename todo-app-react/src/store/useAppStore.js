@@ -45,6 +45,7 @@ const useAppStore = create(
           sheetId: null,
           sheetUrl: null,
           lastSyncTime: null,
+          lastSyncError: null,
           pendingChanges: [],
 
           // Actions - Core Functions
@@ -687,16 +688,21 @@ const useAppStore = create(
 
           signInToGoogle: async () => {
             try {
-              set({ syncStatus: 'syncing' });
+              set({ syncStatus: 'syncing', lastSyncError: null });
+
               const user = await googleSheetsService.signIn();
               const authState = googleSheetsService.getAuthState();
 
+              if (!authState.isSignedIn || !authState.sheetId) {
+                throw new Error('Authentication succeeded but sheet setup failed');
+              }
+
               set({
-                isAuthenticated: authState.isSignedIn,
+                isAuthenticated: true,
                 userEmail: user?.email,
                 sheetId: authState.sheetId,
                 sheetUrl: googleSheetsService.getSheetUrl(),
-                syncStatus: 'success'
+                syncStatus: 'idle'
               });
 
               // Save auth state to storage
@@ -705,12 +711,28 @@ const useAppStore = create(
               await storage.set('userSheetUrl', googleSheetsService.getSheetUrl());
 
               // Perform initial sync
-              await get().syncToSheets();
+              try {
+                await get().syncToSheets();
+              } catch (syncError) {
+                console.error('Initial sync failed:', syncError);
+                set({
+                  syncStatus: 'failed',
+                  lastSyncError: syncError.message
+                });
+                // Don't throw - authentication was successful
+              }
 
               return user;
             } catch (error) {
-              console.error('Google sign-in failed:', error);
-              set({ syncStatus: 'failed' });
+              console.error('❌ Google sign-in failed:', error);
+              set({
+                syncStatus: 'failed',
+                lastSyncError: error.message,
+                isAuthenticated: false,
+                userEmail: null,
+                sheetId: null,
+                sheetUrl: null
+              });
               throw error;
             }
           },
@@ -741,12 +763,14 @@ const useAppStore = create(
           syncToSheets: async () => {
             const authState = googleSheetsService.getAuthState();
             if (!authState.isSignedIn) {
-              console.warn('Not authenticated with Google Sheets');
+              const error = 'Not authenticated with Google Sheets';
+              console.warn('⚠️', error);
+              set({ lastSyncError: error });
               return false;
             }
 
             try {
-              set({ syncStatus: 'syncing' });
+              set({ syncStatus: 'syncing', lastSyncError: null });
               const state = get();
 
               // Define data mapping for different sheets
@@ -943,7 +967,8 @@ const useAppStore = create(
 
               set({
                 syncStatus: 'success',
-                lastSyncTime: new Date().toISOString()
+                lastSyncTime: new Date().toISOString(),
+                lastSyncError: null
               });
 
               await storage.set('lastSyncTime', new Date().toISOString());
@@ -951,8 +976,11 @@ const useAppStore = create(
               return true;
 
             } catch (error) {
-              console.error('Failed to sync to Google Sheets:', error);
-              set({ syncStatus: 'failed' });
+              console.error('❌ Failed to sync to Google Sheets:', error);
+              set({
+                syncStatus: 'failed',
+                lastSyncError: error.message || 'Unknown sync error'
+              });
               return false;
             }
           },
