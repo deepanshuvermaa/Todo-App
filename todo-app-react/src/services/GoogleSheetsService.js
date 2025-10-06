@@ -146,44 +146,40 @@ class GoogleSheetsService {
         const userEmail = localStorage.getItem('userEmail');
         const sheetId = localStorage.getItem('sheetId');
 
-        // Check if token exists and hasn't expired
-        if (!storedToken || !tokenExpiry || Date.now() >= parseInt(tokenExpiry)) {
-            console.log('No valid stored authentication found');
+        // Check if all required values exist
+        if (!storedToken || storedToken === 'undefined' ||
+            !tokenExpiry || tokenExpiry === 'undefined' ||
+            !userEmail || userEmail === 'undefined') {
+            console.log('No stored authentication found');
             this._clearAuthState();
             return;
         }
 
-        // Validate token by testing API call
+        // Check if token hasn't expired (with 5 minute buffer)
+        const expiryTime = parseInt(tokenExpiry);
+        if (isNaN(expiryTime) || Date.now() >= (expiryTime - 300000)) {
+            console.log('Stored token expired');
+            this._clearAuthState();
+            return;
+        }
+
+        // Don't validate token on startup - just restore if not expired
+        // Token will be validated when actually used
         try {
             this.accessToken = storedToken;
-            this.gapi.client.setToken({
-                access_token: this.accessToken
-            });
-
-            // Validate token with a lightweight API call
-            const response = await fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + storedToken);
-
-            if (!response.ok) {
-                throw new Error('Token validation failed');
-            }
-
-            const tokenInfo = await response.json();
-
-            // Check if token is still valid
-            if (tokenInfo.expires_in <= 0) {
-                throw new Error('Token expired');
-            }
-
-            // Token is valid, restore authentication state
             this.isSignedIn = true;
             this.currentUser = { email: userEmail };
             this.sheetId = sheetId;
 
-            console.log('✅ Restored valid Google authentication:', userEmail);
+            this.gapi.client.setToken({
+                access_token: this.accessToken
+            });
+
+            console.log('✅ Restored authentication session:', userEmail);
             this._notifyAuthStateChange();
 
         } catch (error) {
-            console.warn('⚠️ Stored token validation failed:', error.message);
+            console.warn('⚠️ Failed to restore session:', error.message);
             this._clearAuthState();
         }
     }
