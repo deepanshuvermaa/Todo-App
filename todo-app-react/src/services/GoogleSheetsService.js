@@ -216,6 +216,7 @@ class GoogleSheetsService {
         localStorage.removeItem('tokenExpiry');
         localStorage.removeItem('userEmail');
         localStorage.removeItem('sheetId');
+        localStorage.removeItem('lifeDataSheetId');
 
         // Clear current state
         this.accessToken = null;
@@ -234,28 +235,65 @@ class GoogleSheetsService {
 
     async _setupSheet() {
         try {
-            // First try to find existing sheet
             await this.gapi.client.load('drive', 'v3');
+
+            // First check if we have a stored sheet ID for "LIFE Data"
+            const storedSheetId = localStorage.getItem('lifeDataSheetId');
+
+            if (storedSheetId) {
+                // Verify the stored sheet still exists and is accessible
+                try {
+                    const fileResponse = await this.gapi.client.drive.files.get({
+                        fileId: storedSheetId,
+                        fields: 'id, name, trashed'
+                    });
+
+                    if (fileResponse.result && !fileResponse.result.trashed &&
+                        fileResponse.result.name === GOOGLE_CONFIG.SHEET_NAME) {
+                        // Use the stored sheet
+                        this.sheetId = storedSheetId;
+                        console.log('Connected to existing LIFE Data sheet:', this.sheetId);
+
+                        // Verify sheet structure
+                        await this._ensureSheetStructure();
+                        return;
+                    } else {
+                        // Stored sheet is invalid, clear it
+                        localStorage.removeItem('lifeDataSheetId');
+                        console.log('Stored sheet was invalid, searching for LIFE Data sheet...');
+                    }
+                } catch (e) {
+                    // Stored sheet doesn't exist or not accessible
+                    localStorage.removeItem('lifeDataSheetId');
+                    console.log('Stored sheet not found, searching for LIFE Data sheet...');
+                }
+            }
+
+            // Search for existing "LIFE Data" sheet
             const searchResponse = await this.gapi.client.drive.files.list({
                 q: `name='${GOOGLE_CONFIG.SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`,
-                fields: 'files(id, name)'
+                fields: 'files(id, name)',
+                orderBy: 'createdTime desc'
             });
 
             if (searchResponse.result.files && searchResponse.result.files.length > 0) {
-                // Use existing sheet
+                // Use the first (most recent) "LIFE Data" sheet found
                 this.sheetId = searchResponse.result.files[0].id;
-                localStorage.setItem('sheetId', this.sheetId);
-                console.log('Found existing sheet:', this.sheetId);
+                localStorage.setItem('lifeDataSheetId', this.sheetId);
+                localStorage.setItem('sheetId', this.sheetId); // Keep for backward compatibility
+                console.log('Found and connected to existing LIFE Data sheet:', this.sheetId);
 
                 // Verify sheet structure
                 await this._ensureSheetStructure();
             } else {
-                // Create new sheet
+                // No existing "LIFE Data" sheet found, create one
+                console.log('No LIFE Data sheet found, creating new one...');
                 await this._createNewSheet();
             }
         } catch (error) {
             console.error('Error setting up sheet:', error);
-            throw error;
+            // Don't throw - allow offline mode
+            console.warn('Sheet setup failed, app will work in offline mode');
         }
     }
 
@@ -270,23 +308,32 @@ class GoogleSheetsService {
                     { properties: { title: 'Expenses' } },
                     { properties: { title: 'Notes' } },
                     { properties: { title: 'Habits' } },
+                    { properties: { title: 'HabitHistory' } },
                     { properties: { title: 'Meals' } },
                     { properties: { title: 'Reminders' } },
+                    { properties: { title: 'CompletedReminders' } },
                     { properties: { title: 'Journal' } },
                     { properties: { title: 'BucketList' } },
-                    { properties: { title: 'Quotes' } }
+                    { properties: { title: 'VisionBoard' } },
+                    { properties: { title: 'Quotes' } },
+                    { properties: { title: 'Alarms' } },
+                    { properties: { title: 'Movies' } }
                 ]
             });
 
             this.sheetId = response.result.spreadsheetId;
+
+            // Store both for compatibility and clarity
+            localStorage.setItem('lifeDataSheetId', this.sheetId);
             localStorage.setItem('sheetId', this.sheetId);
 
             // Setup headers for each sheet
             await this._initializeSheetHeaders();
 
-            console.log('Created new sheet:', this.sheetId);
+            console.log('Created new LIFE Data sheet:', this.sheetId);
             const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.sheetId}`;
             console.log('Sheet URL:', spreadsheetUrl);
+            console.log('This sheet will be used for all future syncs');
 
         } catch (error) {
             console.error('Error creating new sheet:', error);
@@ -313,12 +360,20 @@ class GoogleSheetsService {
                 values: [['ID', 'Name', 'Description', 'Color', 'Streak', 'CreatedAt']]
             },
             {
+                range: 'HabitHistory!A1:D1',
+                values: [['HabitID', 'Date', 'Completed', 'CreatedAt']]
+            },
+            {
                 range: 'Meals!A1:F1',
                 values: [['ID', 'Name', 'Calories', 'Date', 'Type', 'CreatedAt']]
             },
             {
                 range: 'Reminders!A1:F1',
                 values: [['ID', 'Person', 'Phone', 'Date', 'Note', 'CreatedAt']]
+            },
+            {
+                range: 'CompletedReminders!A1:G1',
+                values: [['ID', 'Person', 'Phone', 'Date', 'Note', 'CompletedDate', 'CreatedAt']]
             },
             {
                 range: 'Journal!A1:F1',
@@ -329,8 +384,20 @@ class GoogleSheetsService {
                 values: [['ID', 'Title', 'Description', 'Status', 'Category', 'CreatedAt']]
             },
             {
+                range: 'VisionBoard!A1:I1',
+                values: [['ID', 'Title', 'Description', 'Category', 'Tags', 'ImageData', 'Frame', 'IsPinned', 'CreatedAt']]
+            },
+            {
                 range: 'Quotes!A1:D1',
                 values: [['ID', 'Text', 'Author', 'CreatedAt']]
+            },
+            {
+                range: 'Alarms!A1:H1',
+                values: [['ID', 'Name', 'Time', 'Enabled', 'Repeat', 'Days', 'Sound', 'CreatedAt']]
+            },
+            {
+                range: 'Movies!A1:H1',
+                values: [['ID', 'Title', 'Year', 'Rating', 'Watched', 'Poster', 'Notes', 'AddedAt']]
             }
         ];
 
@@ -353,7 +420,22 @@ class GoogleSheetsService {
             });
 
             const sheets = response.result.sheets.map(sheet => sheet.properties.title);
-            const requiredSheets = ['Tasks', 'Expenses', 'Notes', 'Habits', 'Meals', 'Reminders', 'Journal', 'BucketList', 'Quotes'];
+            const requiredSheets = [
+                'Tasks',
+                'Expenses',
+                'Notes',
+                'Habits',
+                'HabitHistory',
+                'Meals',
+                'Reminders',
+                'CompletedReminders',
+                'Journal',
+                'BucketList',
+                'VisionBoard',
+                'Quotes',
+                'Alarms',
+                'Movies'
+            ];
 
             const missingSsheets = requiredSheets.filter(sheet => !sheets.includes(sheet));
 

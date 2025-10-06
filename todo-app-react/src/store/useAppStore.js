@@ -67,6 +67,8 @@ const useAppStore = create(
                 journalEntries,
                 quotes,
                 streakData,
+                alarms,
+                movies,
                 darkMode,
                 userEmail,
                 sheetId,
@@ -85,6 +87,8 @@ const useAppStore = create(
                 storage.get('journalEntries'),
                 storage.get('quotes'),
                 storage.get('streakData'),
+                storage.get('alarms'),
+                storage.get('movies'),
                 storage.get('darkMode'),
                 storage.get('userEmail'),
                 storage.get('userSheetId'),
@@ -105,6 +109,8 @@ const useAppStore = create(
                 journalEntries: journalEntries || [],
                 quotes: quotes || [],
                 streakData: streakData || {},
+                alarms: alarms || [],
+                movies: movies || [],
                 darkMode: darkMode === 'enabled',
                 userEmail,
                 sheetId,
@@ -794,6 +800,23 @@ const useAppStore = create(
                   ]
                 },
                 {
+                  sheetName: 'HabitHistory',
+                  data: Object.entries(state.habitHistory).flatMap(([habitId, dates]) =>
+                    Object.entries(dates).map(([date, completed]) => ({
+                      habitId,
+                      date,
+                      completed: completed ? 'TRUE' : 'FALSE',
+                      createdAt: new Date().toISOString()
+                    }))
+                  ),
+                  headers: [
+                    { key: 'habitId', type: 'string' },
+                    { key: 'date', type: 'string' },
+                    { key: 'completed', type: 'string' },
+                    { key: 'createdAt', type: 'string' }
+                  ]
+                },
+                {
                   sheetName: 'Meals',
                   data: state.meals,
                   headers: [
@@ -814,6 +837,19 @@ const useAppStore = create(
                     { key: 'phone', type: 'string' },
                     { key: 'date', type: 'string' },
                     { key: 'note', type: 'string' },
+                    { key: 'createdAt', type: 'string' }
+                  ]
+                },
+                {
+                  sheetName: 'CompletedReminders',
+                  data: state.completedCallReminders,
+                  headers: [
+                    { key: 'id', type: 'string' },
+                    { key: 'person', type: 'string' },
+                    { key: 'phone', type: 'string' },
+                    { key: 'date', type: 'string' },
+                    { key: 'note', type: 'string' },
+                    { key: 'completedDate', type: 'string' },
                     { key: 'createdAt', type: 'string' }
                   ]
                 },
@@ -864,6 +900,34 @@ const useAppStore = create(
                     { key: 'text', type: 'string' },
                     { key: 'author', type: 'string' },
                     { key: 'createdAt', type: 'string' }
+                  ]
+                },
+                {
+                  sheetName: 'Alarms',
+                  data: state.alarms,
+                  headers: [
+                    { key: 'id', type: 'string' },
+                    { key: 'name', type: 'string' },
+                    { key: 'time', type: 'string' },
+                    { key: 'enabled', type: 'boolean' },
+                    { key: 'repeat', type: 'object' },
+                    { key: 'days', type: 'object' },
+                    { key: 'sound', type: 'string' },
+                    { key: 'createdAt', type: 'string' }
+                  ]
+                },
+                {
+                  sheetName: 'Movies',
+                  data: state.movies,
+                  headers: [
+                    { key: 'id', type: 'string' },
+                    { key: 'title', type: 'string' },
+                    { key: 'year', type: 'string' },
+                    { key: 'rating', type: 'string' },
+                    { key: 'watched', type: 'boolean' },
+                    { key: 'poster', type: 'string' },
+                    { key: 'notes', type: 'string' },
+                    { key: 'addedAt', type: 'string' }
                   ]
                 }
               ];
@@ -954,6 +1018,27 @@ const useAppStore = create(
                   ]
                 },
                 {
+                  sheetName: 'HabitHistory',
+                  stateKey: 'habitHistory',
+                  headers: [
+                    { key: 'habitId', type: 'string' },
+                    { key: 'date', type: 'string' },
+                    { key: 'completed', type: 'string' },
+                    { key: 'createdAt', type: 'string' }
+                  ],
+                  transform: (data) => {
+                    // Transform flat array back to nested object
+                    const history = {};
+                    data.forEach(item => {
+                      if (!history[item.habitId]) {
+                        history[item.habitId] = {};
+                      }
+                      history[item.habitId][item.date] = item.completed === 'TRUE';
+                    });
+                    return history;
+                  }
+                },
+                {
                   sheetName: 'Meals',
                   stateKey: 'meals',
                   headers: [
@@ -974,6 +1059,19 @@ const useAppStore = create(
                     { key: 'phone', type: 'string' },
                     { key: 'date', type: 'string' },
                     { key: 'note', type: 'string' },
+                    { key: 'createdAt', type: 'string' }
+                  ]
+                },
+                {
+                  sheetName: 'CompletedReminders',
+                  stateKey: 'completedCallReminders',
+                  headers: [
+                    { key: 'id', type: 'string' },
+                    { key: 'person', type: 'string' },
+                    { key: 'phone', type: 'string' },
+                    { key: 'date', type: 'string' },
+                    { key: 'note', type: 'string' },
+                    { key: 'completedDate', type: 'string' },
                     { key: 'createdAt', type: 'string' }
                   ]
                 },
@@ -1025,6 +1123,34 @@ const useAppStore = create(
                     { key: 'author', type: 'string' },
                     { key: 'createdAt', type: 'string' }
                   ]
+                },
+                {
+                  sheetName: 'Alarms',
+                  stateKey: 'alarms',
+                  headers: [
+                    { key: 'id', type: 'string' },
+                    { key: 'name', type: 'string' },
+                    { key: 'time', type: 'string' },
+                    { key: 'enabled', type: 'boolean' },
+                    { key: 'repeat', type: 'object' },
+                    { key: 'days', type: 'object' },
+                    { key: 'sound', type: 'string' },
+                    { key: 'createdAt', type: 'string' }
+                  ]
+                },
+                {
+                  sheetName: 'Movies',
+                  stateKey: 'movies',
+                  headers: [
+                    { key: 'id', type: 'string' },
+                    { key: 'title', type: 'string' },
+                    { key: 'year', type: 'string' },
+                    { key: 'rating', type: 'string' },
+                    { key: 'watched', type: 'boolean' },
+                    { key: 'poster', type: 'string' },
+                    { key: 'notes', type: 'string' },
+                    { key: 'addedAt', type: 'string' }
+                  ]
                 }
               ];
 
@@ -1036,7 +1162,8 @@ const useAppStore = create(
                   mapping.sheetName,
                   mapping.headers
                 );
-                updateData[mapping.stateKey] = data;
+                // Apply transform if defined (for HabitHistory)
+                updateData[mapping.stateKey] = mapping.transform ? mapping.transform(data) : data;
               }
 
               // Update state with loaded data
