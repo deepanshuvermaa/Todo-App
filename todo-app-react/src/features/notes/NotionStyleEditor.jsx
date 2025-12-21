@@ -4,13 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ContentEditable component that doesn't lose cursor position
 const ContentEditable = ({ blockId, content, className, onUpdate, onKeyDown, refCallback, as: Component = 'div' }) => {
   const elementRef = useRef(null);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     const el = elementRef.current;
-    if (el && el.innerText !== content && document.activeElement !== el) {
+    if (el && isFirstRender.current) {
       el.innerText = content;
+      isFirstRender.current = false;
     }
-  }, [content]);
+  }, []);
 
   return (
     <Component
@@ -538,20 +540,17 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
         );
       default:
         return (
-          <div
-            ref={el => contentEditableRefs.current[block.id] = el}
-            contentEditable
+          <ContentEditable
+            blockId={block.id}
+            content={block.content}
             className="outline-none min-h-[24px]"
-            placeholder={block.placeholder || "Type '/' for commands"}
-            onInput={(e) => {
-              updateBlock(block.id, { content: e.target.innerText });
-              handleSlashCommand(block.id, e.target.innerText);
+            onUpdate={(content) => {
+              updateBlock(block.id, { content });
+              handleSlashCommand(block.id, content);
             }}
             onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-            suppressContentEditableWarning
-          >
-            {block.content}
-          </div>
+            refCallback={el => contentEditableRefs.current[block.id] = el}
+          />
         );
     }
   };
