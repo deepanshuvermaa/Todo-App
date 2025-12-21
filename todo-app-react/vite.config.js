@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename)
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/Todo-App/',
+  base: '/todo-app/',
   plugins: [
     react(),
     VitePWA({
@@ -22,17 +22,17 @@ export default defineConfig({
         theme_color: '#4F46E5',
         background_color: '#ffffff',
         display: 'standalone',
-        scope: '/Todo-App/',
-        start_url: '/Todo-App/',
+        scope: '/todo-app/',
+        start_url: '/todo-app/',
         icons: [
           {
-            src: '/Todo-App/pwa-192x192.png',
+            src: '/todo-app/pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/Todo-App/pwa-512x512.png',
+            src: '/todo-app/pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
