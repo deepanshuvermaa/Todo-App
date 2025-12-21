@@ -1,6 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// ContentEditable component that doesn't lose cursor position
+const ContentEditable = ({ blockId, content, className, onUpdate, onKeyDown, refCallback, as: Component = 'div' }) => {
+  const elementRef = useRef(null);
+
+  useEffect(() => {
+    const el = elementRef.current;
+    if (el && el.innerText !== content && document.activeElement !== el) {
+      el.innerText = content;
+    }
+  }, [content]);
+
+  return (
+    <Component
+      ref={(el) => {
+        elementRef.current = el;
+        if (refCallback) refCallback(el);
+      }}
+      contentEditable
+      className={className}
+      onInput={(e) => onUpdate(e.target.innerText)}
+      onKeyDown={onKeyDown}
+      suppressContentEditableWarning
+    />
+  );
+};
+
 const NotionStyleEditor = ({ note, onSave, onCancel }) => {
   const [blocks, setBlocks] = useState(note?.blocks || [
     { id: Date.now().toString(), type: 'text', content: '', placeholder: 'Start writing...' }
@@ -200,7 +226,7 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
 
   // Update block
   const updateBlock = (id, updates) => {
-    setBlocks(blocks.map(b => b.id === id ? { ...b, ...updates } : b));
+    setBlocks(prevBlocks => prevBlocks.map(b => b.id === id ? { ...b, ...updates } : b));
   };
 
   // Export note
@@ -334,57 +360,52 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
     switch (block.type) {
       case 'heading1':
         return (
-          <h1
-            ref={el => contentEditableRefs.current[block.id] = el}
-            contentEditable
+          <ContentEditable
+            as="h1"
+            blockId={block.id}
+            content={block.content}
             className="text-3xl font-bold mb-4 outline-none"
-            onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+            onUpdate={(content) => updateBlock(block.id, { content })}
             onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-            suppressContentEditableWarning
-          >
-            {block.content}
-          </h1>
+            refCallback={el => contentEditableRefs.current[block.id] = el}
+          />
         );
       case 'heading2':
         return (
-          <h2
-            ref={el => contentEditableRefs.current[block.id] = el}
-            contentEditable
+          <ContentEditable
+            as="h2"
+            blockId={block.id}
+            content={block.content}
             className="text-2xl font-bold mb-3 outline-none"
-            onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+            onUpdate={(content) => updateBlock(block.id, { content })}
             onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-            suppressContentEditableWarning
-          >
-            {block.content}
-          </h2>
+            refCallback={el => contentEditableRefs.current[block.id] = el}
+          />
         );
       case 'heading3':
         return (
-          <h3
-            ref={el => contentEditableRefs.current[block.id] = el}
-            contentEditable
+          <ContentEditable
+            as="h3"
+            blockId={block.id}
+            content={block.content}
             className="text-xl font-semibold mb-2 outline-none"
-            onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+            onUpdate={(content) => updateBlock(block.id, { content })}
             onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-            suppressContentEditableWarning
-          >
-            {block.content}
-          </h3>
+            refCallback={el => contentEditableRefs.current[block.id] = el}
+          />
         );
       case 'bullet':
         return (
           <div className="flex items-start gap-2">
             <span className="mt-1">•</span>
-            <div
-              ref={el => contentEditableRefs.current[block.id] = el}
-              contentEditable
+            <ContentEditable
+              blockId={block.id}
+              content={block.content}
               className="flex-1 outline-none"
-              onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+              onUpdate={(content) => updateBlock(block.id, { content })}
               onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-              suppressContentEditableWarning
-            >
-              {block.content}
-            </div>
+              refCallback={el => contentEditableRefs.current[block.id] = el}
+            />
           </div>
         );
       case 'numbered':
@@ -394,16 +415,14 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
         return (
           <div className="flex items-start gap-2">
             <span className="mt-1">{index}.</span>
-            <div
-              ref={el => contentEditableRefs.current[block.id] = el}
-              contentEditable
+            <ContentEditable
+              blockId={block.id}
+              content={block.content}
               className="flex-1 outline-none"
-              onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+              onUpdate={(content) => updateBlock(block.id, { content })}
               onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-              suppressContentEditableWarning
-            >
-              {block.content}
-            </div>
+              refCallback={el => contentEditableRefs.current[block.id] = el}
+            />
           </div>
         );
       case 'todo':
@@ -415,31 +434,27 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
               onChange={(e) => updateBlock(block.id, { checked: e.target.checked })}
               className="mt-1"
             />
-            <div
-              ref={el => contentEditableRefs.current[block.id] = el}
-              contentEditable
+            <ContentEditable
+              blockId={block.id}
+              content={block.content}
               className={`flex-1 outline-none ${block.checked ? 'line-through text-gray-500' : ''}`}
-              onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+              onUpdate={(content) => updateBlock(block.id, { content })}
               onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-              suppressContentEditableWarning
-            >
-              {block.content}
-            </div>
+              refCallback={el => contentEditableRefs.current[block.id] = el}
+            />
           </div>
         );
       case 'quote':
         return (
           <blockquote className="border-l-4 border-gray-300 pl-4 italic">
-            <div
-              ref={el => contentEditableRefs.current[block.id] = el}
-              contentEditable
+            <ContentEditable
+              blockId={block.id}
+              content={block.content || 'Quote'}
               className="outline-none"
-              onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+              onUpdate={(content) => updateBlock(block.id, { content })}
               onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-              suppressContentEditableWarning
-            >
-              {block.content || 'Quote'}
-            </div>
+              refCallback={el => contentEditableRefs.current[block.id] = el}
+            />
           </blockquote>
         );
       case 'callout':
@@ -450,16 +465,14 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
             block.color === 'red' ? 'bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500' :
             'bg-gray-100 dark:bg-gray-800 border-l-4 border-gray-500'
           }`}>
-            <div
-              ref={el => contentEditableRefs.current[block.id] = el}
-              contentEditable
+            <ContentEditable
+              blockId={block.id}
+              content={block.content || 'Callout'}
               className="outline-none"
-              onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+              onUpdate={(content) => updateBlock(block.id, { content })}
               onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-              suppressContentEditableWarning
-            >
-              {block.content || 'Callout'}
-            </div>
+              refCallback={el => contentEditableRefs.current[block.id] = el}
+            />
           </div>
         );
       case 'divider':
@@ -467,16 +480,15 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
       case 'code':
         return (
           <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
-            <code
-              ref={el => contentEditableRefs.current[block.id] = el}
-              contentEditable
+            <ContentEditable
+              as="code"
+              blockId={block.id}
+              content={block.content || 'Code'}
               className="outline-none font-mono text-sm"
-              onInput={(e) => updateBlock(block.id, { content: e.target.innerText })}
+              onUpdate={(content) => updateBlock(block.id, { content })}
               onKeyDown={(e) => handleBlockKeyDown(e, block.id)}
-              suppressContentEditableWarning
-            >
-              {block.content || 'Code'}
-            </code>
+              refCallback={el => contentEditableRefs.current[block.id] = el}
+            />
           </pre>
         );
       case 'table':

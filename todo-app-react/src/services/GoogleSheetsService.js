@@ -10,6 +10,7 @@ class GoogleSheetsService {
         this.currentUser = null;
         this.sheetId = null;
         this.initializationPromise = null;
+        this.isInitialized = false;
     }
 
     async initialize() {
@@ -96,11 +97,13 @@ class GoogleSheetsService {
                     console.warn('Existing auth check failed:', authError);
                 }
 
+                this.isInitialized = true;
                 resolve(true);
             } catch (error) {
                 console.error('Failed to initialize Google API client:', error);
                 // Don't reject - allow app to work offline
                 console.warn('App will work in offline mode');
+                this.isInitialized = false;
                 resolve(false);
             }
         });
