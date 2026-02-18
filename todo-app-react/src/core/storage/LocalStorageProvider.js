@@ -10,7 +10,19 @@ class LocalStorageProvider {
   async get(key) {
     try {
       const item = localStorage.getItem(this.prefix + key);
-      return item ? JSON.parse(item) : null;
+      if (item === null || item === undefined) return null;
+      // Guard against legacy raw string values like "undefined" or bare emails
+      if (item === 'undefined' || item === 'null') {
+        localStorage.removeItem(this.prefix + key); // clean up bad value
+        return null;
+      }
+      try {
+        return JSON.parse(item);
+      } catch {
+        // Legacy value was stored as a plain string (not JSON-encoded)
+        // Return it as-is so callers still get the value
+        return item;
+      }
     } catch (error) {
       console.error(`Error getting ${key} from localStorage:`, error);
       return null;

@@ -254,7 +254,7 @@ function AppContent() {
 // Wrap AppContent in Router so useNavigate works
 function App() {
   return (
-    <Router basename="/todo-app">
+    <Router basename="/Todo-App">
       <AppContent />
     </Router>
   );

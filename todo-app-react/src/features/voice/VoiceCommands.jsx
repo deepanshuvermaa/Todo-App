@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import useAppStore from '@/store/useAppStore';
@@ -16,6 +16,8 @@ const VoiceCommands = () => {
 
   const recognition = useRef(null);
   const synth = useRef(null);
+  // Keep a stable ref to processCommand so the onresult handler always calls the latest version
+  const processCommandRef = useRef(null);
 
   useEffect(() => {
     // Check browser support
@@ -35,12 +37,14 @@ const VoiceCommands = () => {
       recognition.current.onend = () => setIsListening(false);
 
       recognition.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setTranscript(transcript);
-        processCommand(transcript);
+        const heard = event.results[0][0].transcript;
+        setTranscript(heard);
+        // Use the ref so we always call the latest processCommand (avoids stale closure)
+        if (processCommandRef.current) processCommandRef.current(heard);
       };
 
       recognition.current.onerror = (event) => {
+        if (event.error === 'no-speech') return; // not a real error — user just didn't speak
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
         setResult(`Error: ${event.error}`);
@@ -79,7 +83,7 @@ const VoiceCommands = () => {
     }
   };
 
-  const processCommand = async (text) => {
+  const processCommand = useCallback(async (text) => {
     const lowerText = text.toLowerCase();
     let response = '';
     let action = '';
@@ -186,7 +190,11 @@ const VoiceCommands = () => {
     };
 
     setHistory(prev => [historyItem, ...prev.slice(0, 9)]); // Keep last 10
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addTask, addNote, addJournalEntry, navigate]);
+
+  // Keep the ref in sync so the speech recognition onresult always uses the latest version
+  processCommandRef.current = processCommand;
 
   const processTextCommand = () => {
     if (command.trim()) {
@@ -281,7 +289,7 @@ const VoiceCommands = () => {
                 type="text"
                 value={command}
                 onChange={(e) => setCommand(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && processTextCommand()}
+                onKeyDown={(e) => e.key === 'Enter' && processTextCommand()}
                 placeholder="Type a command..."
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
               />

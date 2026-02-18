@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename)
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/todo-app/',
+  base: '/Todo-App/',
   plugins: [
     react(),
     VitePWA({
@@ -22,13 +22,13 @@ export default defineConfig({
         theme_color: '#4F46E5',
         background_color: '#ffffff',
         display: 'standalone',
-        scope: '/todo-app/',
-        start_url: '/todo-app/',
+        scope: '/Todo-App/',
+        start_url: '/Todo-App/',
         icons: [
-          { src: '/todo-app/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/todo-app/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: '/todo-app/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/todo-app/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+          { src: '/Todo-App/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/Todo-App/pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/Todo-App/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/Todo-App/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       },
       workbox: {
