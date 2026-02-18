@@ -1,18 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ContentEditable component that doesn't lose cursor position
+// ContentEditable component that preserves cursor position during typing
+// and correctly syncs DOM when the block identity changes (e.g. switching notes)
 const ContentEditable = ({ blockId, content, className, onUpdate, onKeyDown, refCallback, as: Component = 'div' }) => {
   const elementRef = useRef(null);
-  const isFirstRender = useRef(true);
+  // Track which block's content we last wrote to the DOM
+  const lastBlockIdRef = useRef(null);
 
   useEffect(() => {
     const el = elementRef.current;
-    if (el && isFirstRender.current) {
-      el.innerText = content;
-      isFirstRender.current = false;
+    if (!el) return;
+    // Only overwrite DOM when the block itself is new (prevents cursor jumping during typing)
+    if (lastBlockIdRef.current !== blockId) {
+      el.innerText = content ?? '';
+      lastBlockIdRef.current = blockId;
     }
-  }, []);
+  }, [blockId, content]);
 
   return (
     <Component
@@ -22,7 +26,7 @@ const ContentEditable = ({ blockId, content, className, onUpdate, onKeyDown, ref
       }}
       contentEditable
       className={className}
-      onInput={(e) => onUpdate(e.target.innerText)}
+      onInput={(e) => onUpdate(e.currentTarget.innerText)}
       onKeyDown={onKeyDown}
       suppressContentEditableWarning
     />
@@ -291,10 +295,18 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
       linkElement.setAttribute('download', exportFileDefaultName);
       linkElement.click();
     } else if (format === 'html') {
+      // L2 fix: escape all user content before injecting into HTML to prevent XSS
+      const esc = (str) => (str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
       let html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>${title}</title>
+  <title>${esc(title)}</title>
   <meta charset="utf-8">
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -308,40 +320,41 @@ const NotionStyleEditor = ({ note, onSave, onCancel }) => {
   </style>
 </head>
 <body>
-  <h1>${title}</h1>
+  <h1>${esc(title)}</h1>
 `;
 
       blocks.forEach(block => {
+        const c = esc(block.content);
         switch (block.type) {
           case 'heading1':
-            html += `  <h1>${block.content}</h1>\n`;
+            html += `  <h1>${c}</h1>\n`;
             break;
           case 'heading2':
-            html += `  <h2>${block.content}</h2>\n`;
+            html += `  <h2>${c}</h2>\n`;
             break;
           case 'heading3':
-            html += `  <h3>${block.content}</h3>\n`;
+            html += `  <h3>${c}</h3>\n`;
             break;
           case 'bullet':
-            html += `  <ul><li>${block.content}</li></ul>\n`;
+            html += `  <ul><li>${c}</li></ul>\n`;
             break;
           case 'numbered':
-            html += `  <ol><li>${block.content}</li></ol>\n`;
+            html += `  <ol><li>${c}</li></ol>\n`;
             break;
           case 'todo':
-            html += `  <div class="todo"><input type="checkbox" ${block.checked ? 'checked' : ''}>${block.content}</div>\n`;
+            html += `  <div class="todo"><input type="checkbox" ${block.checked ? 'checked' : ''}>${c}</div>\n`;
             break;
           case 'quote':
-            html += `  <blockquote>${block.content}</blockquote>\n`;
+            html += `  <blockquote>${c}</blockquote>\n`;
             break;
           case 'code':
-            html += `  <pre><code>${block.content}</code></pre>\n`;
+            html += `  <pre><code>${c}</code></pre>\n`;
             break;
           case 'divider':
             html += `  <hr>\n`;
             break;
           default:
-            html += `  <p>${block.content}</p>\n`;
+            html += `  <p>${c}</p>\n`;
         }
       });
 

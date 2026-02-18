@@ -31,9 +31,15 @@ const useAppStore = create(
           streakData: {},
           alarms: [],
           movies: [],
+          // Trash bin — soft deleted items
+          trash: [],
+
+          // Budget (needs explicit load in initialize)
+          budget: null,
+          budgetAlerts: [],
 
           // UI State
-          currentDate: new Date(),
+          currentDate: new Date().toISOString(), // stored as ISO string to survive Zustand persist serialization
           currentView: 'dashboard',
           darkMode: false,
           isLoading: false,
@@ -47,33 +53,22 @@ const useAppStore = create(
           lastSyncTime: null,
           lastSyncError: null,
           pendingChanges: [],
+          // Race guard: prevents concurrent processPendingChanges calls
+          _syncInProgress: false,
 
           // Actions - Core Functions
           initialize: async () => {
+            // Guard against double-initialization (React StrictMode calls twice in dev)
+            if (get().isLoading) return;
             set({ isLoading: true });
 
             try {
-              // Load all data from storage
+              // Load all data from storage in parallel
               const [
-                tasks,
-                expenses,
-                notes,
-                habits,
-                habitHistory,
-                meals,
-                callReminders,
-                completedCallReminders,
-                bucketList,
-                visionBoard,
-                journalEntries,
-                quotes,
-                streakData,
-                alarms,
-                movies,
-                darkMode,
-                userEmail,
-                sheetId,
-                sheetUrl
+                tasks, expenses, notes, habits, habitHistory, meals,
+                callReminders, completedCallReminders, bucketList, visionBoard,
+                journalEntries, quotes, streakData, alarms, movies,
+                darkMode, userEmail, sheetId, sheetUrl, budget, trash
               ] = await Promise.all([
                 storage.get('tasks'),
                 storage.get('expenses'),
@@ -93,8 +88,16 @@ const useAppStore = create(
                 storage.get('darkMode'),
                 storage.get('userEmail'),
                 storage.get('userSheetId'),
-                storage.get('userSheetUrl')
+                storage.get('userSheetUrl'),
+                storage.get('expenseBudget'),   // H6: budget must be loaded here
+                storage.get('trash'),
               ]);
+
+              // H1: dark mode — unify: stored as boolean in storage, toggle also stores boolean
+              // If legacy string value found, convert it
+              const darkModeValue = typeof darkMode === 'boolean'
+                ? darkMode
+                : darkMode === 'enabled';
 
               set({
                 tasks: tasks || [],
@@ -112,34 +115,52 @@ const useAppStore = create(
                 streakData: streakData || {},
                 alarms: alarms || [],
                 movies: movies || [],
-                darkMode: darkMode === 'enabled',
+                trash: trash || [],
+                budget: budget || null,           // H6: persisted budget restored
+                darkMode: darkModeValue,
+                currentDate: new Date().toISOString(), // H9: always fresh ISO string, never stale Date object
                 userEmail: userEmail && userEmail !== 'undefined' ? userEmail : null,
                 sheetId: sheetId && sheetId !== 'undefined' ? sheetId : null,
                 sheetUrl: sheetUrl && sheetUrl !== 'undefined' ? sheetUrl : null,
                 isLoading: false
               });
 
-              // Check for migration needs
+              // Apply dark mode class to DOM
+              if (darkModeValue) {
+                document.documentElement.classList.add('dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+              }
+
+              // Check for migration needs (guard prevents recursive loop — see migrateFromLegacy)
               if (await storage.needsMigration()) {
                 await get().migrateFromLegacy();
               }
 
-              // Initialize Google Sheets if not already done
+              // Initialize Google Sheets if credentials are configured
               get().initializeGoogleSheets();
 
-              // Setup network handlers
+              // Setup network handlers (with cleanup tracking)
               get().setupNetworkHandlers();
 
               // Check and perform daily rollover
               get().checkAndPerformRollover();
 
-              // Check for existing Google auth
-              if (userEmail && sheetId) {
+              // F1: Generate today's recurring task instances
+              get().processRecurringTasks();
+
+              // F4: Refresh overdue flags on all tasks
+              get().refreshOverdueStatus();
+
+              // Restore auth state if we have saved credentials
+              const resolvedEmail = userEmail && userEmail !== 'undefined' ? userEmail : null;
+              const resolvedSheetId = sheetId && sheetId !== 'undefined' ? sheetId : null;
+              if (resolvedEmail && resolvedSheetId) {
                 set({
                   isAuthenticated: true,
-                  userEmail,
-                  sheetId,
-                  sheetUrl
+                  userEmail: resolvedEmail,
+                  sheetId: resolvedSheetId,
+                  sheetUrl: sheetUrl && sheetUrl !== 'undefined' ? sheetUrl : null
                 });
               }
 
@@ -166,8 +187,18 @@ const useAppStore = create(
               tags: isString ? [] : (taskData.tags || []),
               category: isString ? null : taskData.category,
               completed: false,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              // F1: Recurring task fields
+              // recurrence: null | 'daily' | 'weekly' | 'monthly' | 'weekdays' | 'weekends' | { type:'custom', days:[0..6] }
+              recurrence: isString ? null : (taskData.recurrence || null),
+              recurrenceEnd: isString ? null : (taskData.recurrenceEnd || null), // ISO date string when recurrence stops
+              parentTaskId: isString ? null : (taskData.parentTaskId || null),   // links recurrence instances to original
             };
+
+            // F4: Overdue detection — flag if date is in the past and not completed
+            if (newTask.date < todayStr && !newTask.completed) {
+              newTask.isOverdue = true;
+            }
 
             const tasks = [...get().tasks, newTask];
             set({ tasks });
@@ -192,12 +223,54 @@ const useAppStore = create(
           },
 
           deleteTask: async (taskId) => {
-            const tasks = get().tasks.filter(task => task.id !== taskId);
-            set({ tasks });
-            await storage.set('tasks', tasks);
+            const task = get().tasks.find(t => t.id === taskId);
+            if (!task) return;
 
-            // Queue for sync
+            // Soft delete: move to trash instead of permanent delete
+            const tasks = get().tasks.filter(t => t.id !== taskId);
+            const trash = [...get().trash, {
+              ...task,
+              deletedAt: new Date().toISOString(),
+              deletedFrom: 'tasks'
+            }];
+            set({ tasks, trash });
+            await storage.set('tasks', tasks);
+            await storage.set('trash', trash);
             get().queuePendingChange('tasks', { id: taskId, deleted: true });
+          },
+
+          restoreFromTrash: async (itemId) => {
+            const item = get().trash.find(i => i.id === itemId);
+            if (!item) return;
+
+            const trash = get().trash.filter(i => i.id !== itemId);
+            const { deletedAt, deletedFrom, ...restored } = item;
+
+            if (deletedFrom === 'tasks') {
+              const tasks = [...get().tasks, restored];
+              set({ tasks, trash });
+              await storage.set('tasks', tasks);
+            } else if (deletedFrom === 'notes') {
+              const notes = [...get().notes, restored];
+              set({ notes, trash });
+              await storage.set('notes', notes);
+            } else if (deletedFrom === 'expenses') {
+              const expenses = [...get().expenses, restored];
+              set({ expenses, trash });
+              await storage.set('expenses', expenses);
+            }
+            await storage.set('trash', trash);
+          },
+
+          permanentlyDelete: async (itemId) => {
+            const trash = get().trash.filter(i => i.id !== itemId);
+            set({ trash });
+            await storage.set('trash', trash);
+          },
+
+          emptyTrash: async () => {
+            set({ trash: [] });
+            await storage.set('trash', []);
           },
 
           toggleTask: async (taskId) => {
@@ -249,6 +322,113 @@ const useAppStore = create(
                 get().syncToSheets();
               }
             }
+          },
+
+          // F1: Generate recurring task instances for today if not already generated
+          processRecurringTasks: async () => {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            const todayDay = today.getDay(); // 0=Sun, 6=Sat
+
+            const tasks = get().tasks;
+            // Find master recurring tasks (those with recurrence and no parentTaskId)
+            const recurringMasters = tasks.filter(t =>
+              t.recurrence && !t.parentTaskId && !t.completed
+            );
+
+            const newInstances = [];
+
+            for (const master of recurringMasters) {
+              // Check if recurrence has ended
+              if (master.recurrenceEnd && todayStr > master.recurrenceEnd) continue;
+
+              // Check if an instance for today already exists
+              const alreadyExists = tasks.some(t =>
+                t.parentTaskId === master.id && t.date === todayStr
+              );
+              if (alreadyExists) continue;
+
+              // Check if this recurrence fires today
+              let shouldCreate = false;
+              const r = master.recurrence;
+              if (r === 'daily') {
+                shouldCreate = true;
+              } else if (r === 'weekly') {
+                // Same weekday as the master task's original date
+                const masterDay = new Date(master.date).getDay();
+                shouldCreate = todayDay === masterDay;
+              } else if (r === 'monthly') {
+                // Same day of month as the master
+                const masterDayOfMonth = new Date(master.date).getDate();
+                shouldCreate = today.getDate() === masterDayOfMonth;
+              } else if (r === 'weekdays') {
+                shouldCreate = todayDay >= 1 && todayDay <= 5;
+              } else if (r === 'weekends') {
+                shouldCreate = todayDay === 0 || todayDay === 6;
+              } else if (r && typeof r === 'object' && Array.isArray(r.days)) {
+                shouldCreate = r.days.includes(todayDay);
+              }
+
+              if (shouldCreate) {
+                newInstances.push({
+                  ...master,
+                  id: `${master.id}_${todayStr}`,
+                  date: todayStr,
+                  completed: false,
+                  parentTaskId: master.id,
+                  createdAt: new Date().toISOString(),
+                  isOverdue: false,
+                });
+              }
+            }
+
+            if (newInstances.length > 0) {
+              const updatedTasks = [...tasks, ...newInstances];
+              set({ tasks: updatedTasks });
+              await storage.set('tasks', updatedTasks);
+            }
+          },
+
+          // F13: Pre-task reminders — notify 15 minutes before tasks with a set time
+          checkPreTaskReminders: () => {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const tasks = get().tasks;
+
+            tasks.forEach(task => {
+              if (!task.time || task.completed || task.date !== todayStr) return;
+              const [h, m] = task.time.split(':').map(Number);
+              const taskTime = new Date();
+              taskTime.setHours(h, m, 0, 0);
+              const diffMs = taskTime - now;
+              const diffMin = Math.floor(diffMs / 60_000);
+
+              if (diffMin >= 14 && diffMin <= 15 && diffMs > 0) {
+                const remindedSet = get()._remindedTaskIds || new Set();
+                const key = `${task.id}_${todayStr}`;
+                if (remindedSet.has(key)) return;
+
+                new Notification(`Coming up in 15 min: ${task.text}`, {
+                  body: `Scheduled at ${task.time}${task.location ? ` · ${task.location}` : ''}`,
+                  icon: '/todo-app/vite.svg',
+                });
+
+                remindedSet.add(key);
+                set({ _remindedTaskIds: remindedSet });
+              }
+            });
+          },
+
+          // F4: Compute overdue status for all tasks (call on load and each day change)
+          refreshOverdueStatus: async () => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const tasks = get().tasks.map(task => ({
+              ...task,
+              isOverdue: !task.completed && task.date < todayStr
+            }));
+            set({ tasks });
+            await storage.set('tasks', tasks);
           },
 
           // Expense Management
@@ -604,11 +784,12 @@ const useAppStore = create(
             get().queuePendingChange('notes', { id, deleted: true });
           },
 
-          // Dark Mode
+          // Dark Mode — stores boolean (not string) to stay in sync with Zustand persist
           toggleDarkMode: async () => {
             const darkMode = !get().darkMode;
             set({ darkMode });
-            await storage.set('darkMode', darkMode ? 'enabled' : 'disabled');
+            // Store as boolean — initialize() reads it as boolean too
+            await storage.set('darkMode', darkMode);
 
             // Apply to DOM
             if (darkMode) {
@@ -618,15 +799,29 @@ const useAppStore = create(
             }
           },
 
-          // Network & Sync
+          // Network & Sync — uses named handlers so they can be removed on cleanup
+          _networkHandlersRegistered: false,
           setupNetworkHandlers: () => {
-            window.addEventListener('online', () => {
+            // Guard: only register once — avoids duplicates in React StrictMode
+            if (get()._networkHandlersRegistered) return;
+
+            const onOnline = () => {
               set({ syncStatus: 'pending' });
               get().processPendingChanges();
-            });
-
-            window.addEventListener('offline', () => {
+            };
+            const onOffline = () => {
               set({ syncStatus: 'offline' });
+            };
+
+            window.addEventListener('online', onOnline);
+            window.addEventListener('offline', onOffline);
+
+            set({
+              _networkHandlersRegistered: true,
+              _cleanupNetworkHandlers: () => {
+                window.removeEventListener('online', onOnline);
+                window.removeEventListener('offline', onOffline);
+              }
             });
 
             // Initial check
@@ -652,27 +847,21 @@ const useAppStore = create(
           },
 
           processPendingChanges: async () => {
-            const pendingChanges = get().pendingChanges;
-            if (pendingChanges.length === 0) return;
+            // H8: race guard — only one sync can run at a time
+            if (get()._syncInProgress) return;
+            if (get().pendingChanges.length === 0) return;
+            if (!navigator.onLine || !get().isAuthenticated) return;
 
-            if (!navigator.onLine || !get().isAuthenticated) {
-              return;
-            }
-
-            set({ syncStatus: 'syncing' });
+            set({ _syncInProgress: true, syncStatus: 'syncing' });
 
             try {
-              // Process changes (will integrate with Google Sheets sync)
               await get().syncToSheets();
-
-              // Clear pending changes
-              set({ pendingChanges: [] });
+              set({ pendingChanges: [], _syncInProgress: false });
               await storage.set('pendingChanges', []);
-
-              set({ syncStatus: 'success', lastSyncTime: new Date() });
+              set({ syncStatus: 'success', lastSyncTime: new Date().toISOString() });
             } catch (error) {
               console.error('Failed to process pending changes:', error);
-              set({ syncStatus: 'failed' });
+              set({ syncStatus: 'failed', _syncInProgress: false });
             }
           },
 
@@ -1230,6 +1419,8 @@ const useAppStore = create(
           },
 
           // Migration from legacy app
+          // IMPORTANT: This must NOT call initialize() — that would create an infinite loop.
+          // Instead it writes migrated data directly and marks migration done.
           migrateFromLegacy: async () => {
             console.log('Starting migration from legacy app...');
 
@@ -1249,10 +1440,30 @@ const useAppStore = create(
               }
             }
 
-            // Migrate using storage adapter
+            // Migrate using storage adapter (writes to todo_ prefixed keys)
             if (Object.keys(legacyData).length > 0) {
               await storage.migrate(legacyData);
-              await get().initialize(); // Reload with migrated data
+
+              // Parse and apply migrated data directly to store — no re-initialization
+              const parsedUpdates = {};
+              const arrayKeys = ['tasks', 'expenses', 'notes', 'habits', 'meals',
+                'callReminders', 'completedCallReminders', 'bucketList', 'journalEntries', 'quotes'];
+              for (const key of arrayKeys) {
+                if (legacyData[key]) {
+                  try { parsedUpdates[key] = JSON.parse(legacyData[key]); } catch (_) { /* skip invalid */ }
+                }
+              }
+              if (legacyData.habitHistory) {
+                try { parsedUpdates.habitHistory = JSON.parse(legacyData.habitHistory); } catch (_) { /* skip */ }
+              }
+              if (legacyData.darkMode) {
+                parsedUpdates.darkMode = legacyData.darkMode === 'enabled';
+              }
+
+              set(parsedUpdates);
+
+              // Mark migration as complete so needsMigration() returns false
+              localStorage.setItem('todo_migrationCompleted', new Date().toISOString());
               console.log('Migration completed successfully');
             }
           },
@@ -1383,7 +1594,11 @@ const useAppStore = create(
             userEmail: state.userEmail,
             sheetId: state.sheetId,
             sheetUrl: state.sheetUrl,
-            lastSyncTime: state.lastSyncTime
+            lastSyncTime: state.lastSyncTime,
+            // F6: Persist trash so deleted items survive reloads
+            trash: state.trash,
+            // H6: Persist budget
+            budget: state.budget,
           })
         }
       )

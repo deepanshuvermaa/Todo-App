@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import useAppStore from '@/store/useAppStore';
 import Sidebar from './components/Sidebar';
+import GlobalSearch from './components/GlobalSearch';
 import TaskManager from '@/features/tasks/TaskManager';
 import ExpenseManager from '@/features/expenses/ExpenseManager';
 import NotesManager from '@/features/notes/NotesManager';
@@ -22,9 +23,10 @@ import About from '@/features/about/About';
 import GlobalVoiceButton from './components/GlobalVoiceButton';
 import MigrationPrompt from './components/MigrationPrompt';
 import LoadingScreen from './components/LoadingScreen';
+import useKeyboardShortcuts from '@/hooks/useKeyboardShortcuts';
 import './index.css';
 
-function App() {
+function AppContent() {
   const {
     initialize,
     isLoading,
@@ -33,6 +35,8 @@ function App() {
 
   const [showMigration, setShowMigration] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Show sidebar by default on desktop
   useEffect(() => {
@@ -76,6 +80,65 @@ function App() {
     }
   };
 
+  // F8: Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      keys: ['ctrl+k'],
+      handler: () => setSearchOpen(true),
+      description: 'Open global search'
+    },
+    {
+      keys: ['meta+k'],
+      handler: () => setSearchOpen(true),
+      description: 'Open global search (Mac)'
+    },
+    {
+      keys: ['Escape'],
+      handler: () => setSearchOpen(false),
+      description: 'Close search / modals'
+    },
+    {
+      keys: ['d'],
+      handler: () => navigate('/'),
+      description: 'Go to Dashboard'
+    },
+    {
+      keys: ['t'],
+      handler: () => navigate('/tasks'),
+      description: 'Go to Tasks'
+    },
+    {
+      keys: ['n'],
+      handler: () => navigate('/notes'),
+      description: 'Go to Notes'
+    },
+    {
+      keys: ['e'],
+      handler: () => navigate('/expenses'),
+      description: 'Go to Expenses'
+    },
+    {
+      keys: ['h'],
+      handler: () => navigate('/habits'),
+      description: 'Go to Habits'
+    },
+    {
+      keys: ['j'],
+      handler: () => navigate('/journal'),
+      description: 'Go to Journal'
+    },
+    {
+      keys: ['?'],
+      handler: () => navigate('/about'),
+      description: 'Go to About/Help'
+    },
+    {
+      keys: [','],
+      handler: () => navigate('/settings'),
+      description: 'Go to Settings'
+    },
+  ]);
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -85,73 +148,116 @@ function App() {
   }
 
   return (
-    <Router basename="/Todo-App">
-      <div className="app min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="flex h-screen relative">
-          {/* Sidebar */}
-          <Sidebar
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen(!sidebarOpen)}
-          />
+    <div className="app min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* F5: Global Search overlay */}
+      <GlobalSearch
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={(view) => {
+          const viewToPath = {
+            tasks: '/tasks', notes: '/notes', expenses: '/expenses',
+            habits: '/habits', journal: '/journal', bucket: '/bucket',
+            meals: '/meals', alarms: '/alarms', reminders: '/reminders',
+            dashboard: '/', settings: '/settings'
+          };
+          navigate(viewToPath[view] || '/');
+        }}
+      />
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
-            {/* Mobile Header */}
-            <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between">
+      <div className="flex h-screen relative">
+        {/* Sidebar */}
+        <Sidebar
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
+          {/* Mobile Header */}
+          <header className="md:hidden bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                aria-label="Open sidebar"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <h1 className="text-lg font-bold text-blue-600 dark:text-blue-400">LIFE</h1>
+              <div className="flex items-center gap-2">
+                {/* Search button on mobile */}
                 <button
-                  onClick={() => setSidebarOpen(true)}
+                  onClick={() => setSearchOpen(true)}
                   className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  aria-label="Search (Ctrl+K)"
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
-                <h1 className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  LIFE
-                </h1>
                 <GlobalVoiceButton />
               </div>
-            </header>
+            </div>
+          </header>
 
-            {/* Desktop Header with Global Voice Button */}
-            <header className="hidden md:block bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-center justify-between">
-                <div></div> {/* Spacer */}
-                <GlobalVoiceButton />
-              </div>
-            </header>
+          {/* Desktop Header */}
+          <header className="hidden md:block bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+            <div className="flex items-center justify-between">
+              {/* Search bar trigger */}
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors text-sm text-gray-500 dark:text-gray-400 min-w-[200px]"
+                aria-label="Global search (Ctrl+K)"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Search everything...</span>
+                <kbd className="ml-auto text-xs font-mono border border-gray-300 dark:border-gray-500 rounded px-1">Ctrl+K</kbd>
+              </button>
+              <GlobalVoiceButton />
+            </div>
+          </header>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-              <div className="p-4 md:p-6">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/tasks" element={<TaskManager />} />
-                  <Route path="/expenses" element={<ExpenseManager />} />
-                  <Route path="/notes" element={<NotesManager />} />
-                  <Route path="/habits" element={<HabitTracker />} />
-                  <Route path="/meals" element={<MealTracker />} />
-                  <Route path="/alarms" element={<AlarmManager />} />
-                  <Route path="/movies" element={<SimpleMovieRecommendations />} />
-                  <Route path="/journal" element={<DailyJournal />} />
-                  <Route path="/reminders" element={<CallReminders />} />
-                  <Route path="/bucket" element={<BucketList />} />
-                  <Route path="/voice" element={<VoiceCommands />} />
-                  <Route path="/ocr" element={<TextExtraction />} />
-                  <Route path="/links" element={<LinkManager />} />
-                  <Route path="/history" element={<History />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Routes>
-              </div>
-            </main>
-          </div>
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900" role="main">
+            <div className="p-4 md:p-6">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/tasks" element={<TaskManager />} />
+                <Route path="/expenses" element={<ExpenseManager />} />
+                <Route path="/notes" element={<NotesManager />} />
+                <Route path="/habits" element={<HabitTracker />} />
+                <Route path="/meals" element={<MealTracker />} />
+                <Route path="/alarms" element={<AlarmManager />} />
+                <Route path="/movies" element={<SimpleMovieRecommendations />} />
+                <Route path="/journal" element={<DailyJournal />} />
+                <Route path="/reminders" element={<CallReminders />} />
+                <Route path="/bucket" element={<BucketList />} />
+                <Route path="/voice" element={<VoiceCommands />} />
+                <Route path="/ocr" element={<TextExtraction />} />
+                <Route path="/links" element={<LinkManager />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </div>
+          </main>
         </div>
       </div>
-    </Router>
+    </div>
   );
 }
 
+// Wrap AppContent in Router so useNavigate works
+function App() {
+  return (
+    <Router basename="/todo-app">
+      <AppContent />
+    </Router>
+  );
+}
 
 export default App;

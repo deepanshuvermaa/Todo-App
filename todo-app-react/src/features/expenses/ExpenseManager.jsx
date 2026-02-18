@@ -4,12 +4,14 @@ import ExpenseForm from './ExpenseForm';
 import ExpenseList from './ExpenseList';
 import ExpenseStats from './ExpenseStats';
 import BudgetManager from './BudgetManager';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ExpenseManager = () => {
   const { expenses, addExpense, updateExpense, deleteExpense } = useAppStore();
   const [filter, setFilter] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [confirmState, setConfirmState] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -47,8 +49,16 @@ const ExpenseManager = () => {
       return acc;
     }, {});
 
-    const dailyAverage = total / 30;
-    const weeklyAverage = total / 4;
+    // Use actual days in the selected month for accurate averages
+    let daysInPeriod = 30;
+    let weeksInPeriod = 4;
+    if (selectedMonth && selectedMonth !== 'all') {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      daysInPeriod = new Date(year, month, 0).getDate(); // last day of month = days in month
+      weeksInPeriod = daysInPeriod / 7;
+    }
+    const dailyAverage = daysInPeriod > 0 ? total / daysInPeriod : 0;
+    const weeklyAverage = weeksInPeriod > 0 ? total / weeksInPeriod : 0;
 
     return {
       total,
@@ -70,10 +80,13 @@ const ExpenseManager = () => {
     setEditingExpense(null);
   };
 
-  const handleDeleteExpense = async (id) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
-      await deleteExpense(id);
-    }
+  const handleDeleteExpense = (id) => {
+    setConfirmState({
+      message: 'Delete this expense?',
+      confirmLabel: 'Delete',
+      danger: true,
+      onConfirm: () => deleteExpense(id),
+    });
   };
 
   const categories = [
@@ -91,6 +104,7 @@ const ExpenseManager = () => {
 
   return (
     <div className="expense-manager">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Header */}
       <div className="mb-6">
         {/* Centered Title */}

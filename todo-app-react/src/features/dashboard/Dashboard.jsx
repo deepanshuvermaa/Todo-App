@@ -333,7 +333,7 @@ const Dashboard = () => {
             <MoneyIcon className="w-6 h-6 text-green-600" />
             <span className="text-sm text-gray-500">Month Spend</span>
           </div>
-          <p className="text-2xl font-bold">${metrics.monthlyExpenses.toFixed(2)}</p>
+          <p className="text-2xl font-bold">₹{metrics.monthlyExpenses.toFixed(2)}</p>
           <p className="text-xs text-gray-500 mt-1">This month</p>
         </motion.div>
 

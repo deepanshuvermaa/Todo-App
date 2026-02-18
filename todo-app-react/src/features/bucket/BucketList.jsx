@@ -3,6 +3,7 @@ import useAppStore from '@/store/useAppStore';
 import BucketListForm from './BucketListForm';
 import BucketListCard from './BucketListCard';
 import VisionBoard from './VisionBoard';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BucketList = () => {
@@ -14,6 +15,7 @@ const BucketList = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('priority'); // priority, deadline, progress
+  const [confirmState, setConfirmState] = useState(null);
 
   // Filter and sort items
   const filteredItems = useMemo(() => {
@@ -103,10 +105,14 @@ const BucketList = () => {
     setShowForm(false);
   };
 
-  const handleDeleteItem = async (id) => {
-    if (window.confirm('Are you sure you want to delete this bucket list item?')) {
-      await deleteBucketItem(id);
-    }
+  const handleDeleteItem = (id) => {
+    setConfirmState({
+      message: 'Delete this dream?',
+      detail: 'This bucket list item and all its progress will be permanently deleted.',
+      confirmLabel: 'Delete Dream',
+      danger: true,
+      onConfirm: () => deleteBucketItem(id),
+    });
   };
 
   const handleUpdateProgress = async (id, progress) => {
@@ -142,6 +148,7 @@ const BucketList = () => {
 
   return (
     <div className="bucket-list">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Header */}
       <div className="mb-6">
         {/* Centered Title */}

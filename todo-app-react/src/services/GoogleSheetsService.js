@@ -114,47 +114,24 @@ class GoogleSheetsService {
             throw new Error('Google Identity Services not available');
         }
 
-        // Suppress COOP warnings in console (expected on GitHub Pages)
-        const originalWarn = console.warn;
-        const originalError = console.error;
-
-        console.warn = (...args) => {
-            const message = args[0]?.toString() || '';
-            if (!message.includes('Cross-Origin-Opener-Policy') &&
-                !message.includes('window.opener')) {
-                originalWarn.apply(console, args);
-            }
-        };
-
-        console.error = (...args) => {
-            const message = args[0]?.toString() || '';
-            if (!message.includes('Cross-Origin-Opener-Policy') &&
-                !message.includes('window.opener')) {
-                originalError.apply(console, args);
-            }
-        };
-
-        try {
-            this.client = this.google.accounts.oauth2.initTokenClient({
-                client_id: GOOGLE_CONFIG.CLIENT_ID,
-                scope: GOOGLE_CONFIG.SCOPES,
-                callback: (response) => {
-                    this._handleAuthResponse(response);
-                },
-                error_callback: (error) => {
-                    console.error('OAuth error:', error);
-                    if (this.signInReject) {
-                        this.signInReject(new Error(error.type || 'OAuth failed'));
-                    }
+        // M10 fix: Do NOT patch global console.warn/console.error — that silences all
+        // debugging across the app and is impossible to restore under race conditions.
+        // COOP warnings from Google Sign-In popup are cosmetic and can be ignored.
+        this.client = this.google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CONFIG.CLIENT_ID,
+            scope: GOOGLE_CONFIG.SCOPES,
+            callback: (response) => {
+                this._handleAuthResponse(response);
+            },
+            error_callback: (error) => {
+                console.error('OAuth error:', error);
+                if (this.signInReject) {
+                    this.signInReject(new Error(error.type || 'OAuth failed'));
                 }
-            });
+            }
+        });
 
-            console.log('✅ Google Identity Services client initialized');
-        } finally {
-            // Restore console methods
-            console.warn = originalWarn;
-            console.error = originalError;
-        }
+        console.log('✅ Google Identity Services client initialized');
     }
 
     async _checkExistingAuth() {

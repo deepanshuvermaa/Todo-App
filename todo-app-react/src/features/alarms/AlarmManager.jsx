@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAppStore from '@/store/useAppStore';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import AlarmForm from './AlarmForm';
 import FlipClock from './FlipClock';
 import DigitalTimer from './DigitalTimer';
@@ -9,7 +10,7 @@ import AlarmModal from './AlarmModal';
 import AlarmSoundManager from './AlarmSoundManager';
 
 const AlarmManager = () => {
-  const { alarms, addAlarm, updateAlarm, deleteAlarm } = useAppStore();
+  const { alarms, addAlarm, updateAlarm, deleteAlarm, checkPreTaskReminders } = useAppStore();
   const [showForm, setShowForm] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeAlarms, setActiveAlarms] = useState([]);
@@ -21,14 +22,73 @@ const AlarmManager = () => {
     snoozeEnabled: true,
     vibrationEnabled: true
   });
+  const [confirmState, setConfirmState] = useState(null);
   const soundManagerRef = useRef(AlarmSoundManager);
 
+  // Track the last time we checked alarms so we can detect missed windows
+  const lastCheckTimeRef = useRef(Date.now());
+
   useEffect(() => {
+    let minuteCounter = 0;
     const timer = setInterval(() => {
       setCurrentTime(new Date());
+      lastCheckTimeRef.current = Date.now();
+      // F13: Check pre-task reminders every 60 seconds (not every second)
+      minuteCounter++;
+      if (minuteCounter >= 60) {
+        minuteCounter = 0;
+        checkPreTaskReminders();
+      }
     }, 1000);
 
     return () => clearInterval(timer);
+  }, [checkPreTaskReminders]);
+
+  // M1: Missed alarm recovery — when tab becomes visible again after being hidden,
+  // check if any alarms fired while the interval was throttled
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const now = new Date();
+        const gapMs = Date.now() - lastCheckTimeRef.current;
+        // If tab was hidden for more than 90 seconds, we may have missed alarms
+        if (gapMs > 90_000) {
+          const missedFrom = new Date(lastCheckTimeRef.current);
+          const alarmsCopy = useAppStore.getState().alarms;
+          alarmsCopy.forEach(alarm => {
+            if (!alarm.enabled) return;
+            const [h, m] = alarm.time.split(':').map(Number);
+            // Check each minute in the gap
+            const candidate = new Date(missedFrom);
+            candidate.setSeconds(0, 0);
+            while (candidate <= now) {
+              const candidateStr = candidate.toTimeString().slice(0, 5);
+              const candidateDay = candidate.getDay();
+              const shouldRing = alarm.repeat === 'once' || alarm.repeat === 'daily' ||
+                (alarm.repeat === 'weekdays' && candidateDay >= 1 && candidateDay <= 5) ||
+                (alarm.repeat === 'weekends' && (candidateDay === 0 || candidateDay === 6)) ||
+                (alarm.repeat === 'custom' && alarm.customDays?.includes(candidateDay));
+
+              if (shouldRing && candidateStr === alarm.time) {
+                // Fire a "missed alarm" notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  new Notification(`Missed Alarm: ${alarm.label || 'Alarm'}`, {
+                    body: `This alarm was scheduled for ${alarm.time} but fired while the app was in the background.`,
+                    icon: '/todo-app/vite.svg'
+                  });
+                }
+                break;
+              }
+              candidate.setMinutes(candidate.getMinutes() + 1);
+            }
+          });
+        }
+        lastCheckTimeRef.current = Date.now();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   useEffect(() => {
@@ -98,7 +158,7 @@ const AlarmManager = () => {
     if ('Notification' in window && Notification.permission === 'granted') {
       const notification = new Notification(alarm.label || 'Alarm', {
         body: alarm.message || 'Your alarm is ringing!',
-        icon: '/Todo-App/vite.svg',
+        icon: '/todo-app/vite.svg',
         requireInteraction: true,
         silent: false
       });
@@ -119,12 +179,17 @@ const AlarmManager = () => {
       }
     }
 
-    // Auto-dismiss after 10 minutes if not manually dismissed (safety feature)
+    // Auto-dismiss after 10 minutes — use a ref to read live state, not stale closure
+    const alarmId = alarm.id;
     setTimeout(() => {
-      if (activeAlarms.includes(alarm.id)) {
-        console.log('Auto-dismissing alarm after 10 minutes');
-        dismissAlarm(alarm.id);
-      }
+      setActiveAlarms(prev => {
+        if (prev.includes(alarmId)) {
+          console.log('Auto-dismissing alarm after 10 minutes');
+          soundManagerRef.current.stopAlarm();
+          return prev.filter(id => id !== alarmId);
+        }
+        return prev;
+      });
     }, 10 * 60 * 1000);
   };
 
@@ -162,7 +227,7 @@ const AlarmManager = () => {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(`Alarm Snoozed`, {
         body: `Will ring again in ${minutes} minutes at ${wakeTime.toTimeString().slice(0, 5)}`,
-        icon: '/Todo-App/vite.svg'
+        icon: '/todo-app/vite.svg'
       });
     }
   };
@@ -191,10 +256,15 @@ const AlarmManager = () => {
   };
 
   const deleteAlarmHandler = (alarmId) => {
-    if (window.confirm('Are you sure you want to delete this alarm?')) {
-      deleteAlarm(alarmId);
-      dismissAlarm(alarmId);
-    }
+    setConfirmState({
+      message: 'Delete this alarm?',
+      confirmLabel: 'Delete',
+      danger: true,
+      onConfirm: () => {
+        deleteAlarm(alarmId);
+        dismissAlarm(alarmId);
+      },
+    });
   };
 
   const formatTime = (time) => {
@@ -234,6 +304,7 @@ const AlarmManager = () => {
 
   return (
     <div className="alarm-manager">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {renderActiveAlarms()}
 
       <div className="mb-6">

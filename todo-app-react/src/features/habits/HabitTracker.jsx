@@ -4,6 +4,7 @@ import HabitCard from './HabitCard';
 import HabitForm from './HabitForm';
 import HabitStats from './HabitStats';
 import HabitCalendar from './HabitCalendar';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const HabitTracker = () => {
@@ -12,6 +13,7 @@ const HabitTracker = () => {
   const [editingHabit, setEditingHabit] = useState(null);
   const [selectedHabit, setSelectedHabit] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // grid, list, calendar
+  const [confirmState, setConfirmState] = useState(null);
 
   // Calculate streaks and statistics
   const habitsWithStats = useMemo(() => {
@@ -94,10 +96,14 @@ const HabitTracker = () => {
     setShowForm(false);
   };
 
-  const handleDeleteHabit = async (id) => {
-    if (window.confirm('Are you sure you want to delete this habit? All history will be lost.')) {
-      await deleteHabit(id);
-    }
+  const handleDeleteHabit = (id) => {
+    setConfirmState({
+      message: 'Delete this habit?',
+      detail: 'All tracking history for this habit will be permanently lost.',
+      confirmLabel: 'Delete Habit',
+      danger: true,
+      onConfirm: () => deleteHabit(id),
+    });
   };
 
   const handleToggleDay = async (habitId, date) => {
@@ -122,6 +128,7 @@ const HabitTracker = () => {
 
   return (
     <div className="habit-tracker">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Header */}
       <div className="mb-6">
         {/* Centered Title */}

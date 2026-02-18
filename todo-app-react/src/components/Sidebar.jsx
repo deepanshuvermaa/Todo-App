@@ -237,6 +237,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onToggle}
+            aria-hidden="true"
             className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           />
         )}
@@ -257,6 +258,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
         style={{
           willChange: 'transform'
         }}
+        aria-label="Main navigation"
+        aria-hidden={!isOpen && window.innerWidth < 768}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -271,6 +274,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                   e.stopPropagation();
                   onToggle();
                 }}
+                aria-label="Close navigation menu"
                 className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -299,24 +303,27 @@ const Sidebar = ({ isOpen, onToggle }) => {
           </div>
 
           {/* Navigation Menu */}
-          <nav className="flex-1 overflow-y-auto p-2">
-            <div className="space-y-1">
+          <nav className="flex-1 overflow-y-auto p-2" aria-label="Application sections">
+            <div className="space-y-1" role="list">
               {menuItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleNavigation(item)}
+                  role="listitem"
+                  aria-current={isActive(item.path) ? 'page' : undefined}
+                  aria-label={item.count !== null && item.count > 0 ? `${item.label} (${item.count})` : item.label}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
                     isActive(item.path)
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3" aria-hidden="true">
                     {getIcon(item.icon)}
                     <span className="font-medium">{item.label}</span>
                   </div>
                   {item.count !== null && item.count > 0 && (
-                    <span className={`px-2 py-1 text-xs rounded-full ${
+                    <span aria-hidden="true" className={`px-2 py-1 text-xs rounded-full ${
                       isActive(item.path)
                         ? 'bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300'
                         : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
@@ -334,9 +341,11 @@ const Sidebar = ({ isOpen, onToggle }) => {
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
+              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-pressed={darkMode}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              {darkMode ? <SunnyIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+              {darkMode ? <SunnyIcon className="w-5 h-5" aria-hidden="true" /> : <MoonIcon className="w-5 h-5" aria-hidden="true" />}
               <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
 
@@ -344,17 +353,19 @@ const Sidebar = ({ isOpen, onToggle }) => {
             {isAuthenticated ? (
               <button
                 onClick={signOutFromGoogle}
+                aria-label="Sign out from Google"
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
-                <SignOutIcon className="w-5 h-5" />
+                <SignOutIcon className="w-5 h-5" aria-hidden="true" />
                 <span>Sign Out</span>
               </button>
             ) : (
               <button
                 onClick={signInToGoogle}
+                aria-label="Connect Google Sheets for sync"
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
               >
-                <GoogleIcon className="w-5 h-5" />
+                <GoogleIcon className="w-5 h-5" aria-hidden="true" />
                 <span>Connect Google</span>
               </button>
             )}

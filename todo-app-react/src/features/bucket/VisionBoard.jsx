@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import useAppStore from '@/store/useAppStore';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const VisionBoard = () => {
@@ -18,6 +19,7 @@ const VisionBoard = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editingImage, setEditingImage] = useState(null);
   const [selectedFrame, setSelectedFrame] = useState('none');
+  const [confirmState, setConfirmState] = useState(null);
   const fileInputRef = useRef(null);
 
   // Frame templates
@@ -149,11 +151,14 @@ const VisionBoard = () => {
   };
 
   // Handle image deletion
-  const handleDeleteImage = async (imageId) => {
-    if (window.confirm('Are you sure you want to delete this image from your vision board?')) {
-      await deleteVisionImage(imageId);
-      setSelectedImage(null);
-    }
+  const handleDeleteImage = (imageId) => {
+    setConfirmState({
+      message: 'Delete this vision image?',
+      detail: 'This image will be permanently removed from your vision board.',
+      confirmLabel: 'Delete Image',
+      danger: true,
+      onConfirm: () => { deleteVisionImage(imageId); setSelectedImage(null); },
+    });
   };
 
   // Upload Modal Component
@@ -546,6 +551,7 @@ const VisionBoard = () => {
 
   return (
     <div className="vision-board">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Controls */}
       <div className="mb-6 space-y-4">
         {/* Search and Upload */}

@@ -21,8 +21,9 @@ export class NaturalLanguageParser {
       // Duration patterns
       { pattern: /(for|takes?|duration)\s+(\d+)\s*(hour|hours|hr|hrs|minute|minutes|min|mins)/gi, type: 'duration' },
 
-      // Location patterns
-      { pattern: /(at|in|@)\s+([a-zA-Z0-9\s]+?)(?:\s|$)/gi, type: 'location' },
+      // Location patterns — negative lookahead prevents matching pure time tokens like "at 3pm" / "at 14:00"
+      // Only matches locations that start with a letter (not a digit), e.g. "at the gym", "in office"
+      { pattern: /(at|in|@)\s+(?!\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b)([a-zA-Z][a-zA-Z0-9\s]{1,30}?)(?=\s|$)/gi, type: 'location' },
 
       // Category patterns
       { pattern: /#(\w+)/g, type: 'tag' },

@@ -4,6 +4,7 @@ import MealForm from './MealForm';
 import MealCard from './MealCard';
 import MealStats from './MealStats';
 import MealCalendar from './MealCalendar';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MealTracker = () => {
@@ -13,6 +14,7 @@ const MealTracker = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState('today'); // today, week, calendar
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmState, setConfirmState] = useState(null);
 
   // Filter meals by selected date or week
   const filteredMeals = useMemo(() => {
@@ -101,10 +103,14 @@ const MealTracker = () => {
     setShowForm(false);
   };
 
-  const handleDeleteMeal = async (id) => {
-    if (window.confirm('Are you sure you want to delete this meal?')) {
-      await deleteMeal(id);
-    }
+  const handleDeleteMeal = (id) => {
+    setConfirmState({
+      message: 'Delete this meal?',
+      detail: 'This meal entry will be permanently deleted.',
+      confirmLabel: 'Delete Meal',
+      danger: true,
+      onConfirm: () => deleteMeal(id),
+    });
   };
 
   const handleDateChange = (days) => {
@@ -127,6 +133,7 @@ const MealTracker = () => {
 
   return (
     <div className="meal-tracker">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Header */}
       <div className="mb-6">
         {/* Centered Title */}

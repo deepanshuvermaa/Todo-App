@@ -3,6 +3,7 @@ import useAppStore from '@/store/useAppStore';
 import JournalEntry from './JournalEntry';
 import JournalCalendar from './JournalCalendar';
 import JournalStats from './JournalStats';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DailyJournal = () => {
@@ -11,6 +12,7 @@ const DailyJournal = () => {
   const [viewMode, setViewMode] = useState('write'); // write, calendar, insights
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMood, setFilterMood] = useState('all');
+  const [confirmState, setConfirmState] = useState(null);
 
   // Get entry for selected date
   const currentEntry = useMemo(() => {
@@ -124,10 +126,15 @@ const DailyJournal = () => {
     }
   };
 
-  const handleDeleteEntry = async () => {
-    if (currentEntry && window.confirm('Are you sure you want to delete this journal entry?')) {
-      await deleteJournalEntry(currentEntry.id);
-    }
+  const handleDeleteEntry = () => {
+    if (!currentEntry) return;
+    setConfirmState({
+      message: 'Delete this journal entry?',
+      detail: 'This journal entry will be permanently deleted and cannot be recovered.',
+      confirmLabel: 'Delete Entry',
+      danger: true,
+      onConfirm: () => deleteJournalEntry(currentEntry.id),
+    });
   };
 
   const handleDateChange = (days) => {
@@ -155,6 +162,7 @@ const DailyJournal = () => {
 
   return (
     <div className="daily-journal">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Header */}
       <div className="mb-6">
         {/* Centered Title */}

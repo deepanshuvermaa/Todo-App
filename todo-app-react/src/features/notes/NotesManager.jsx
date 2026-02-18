@@ -4,6 +4,7 @@ import NoteEditor from './NoteEditor';
 import NotionStyleEditor from './NotionStyleEditor';
 import NoteCard from './NoteCard';
 import NoteSidebar from './NoteSidebar';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NotesManager = () => {
@@ -17,6 +18,7 @@ const NotesManager = () => {
   const [showEditor, setShowEditor] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [editorMode, setEditorMode] = useState('notion'); // 'classic' or 'notion'
+  const [confirmState, setConfirmState] = useState(null);
 
   // Extract all unique tags from notes
   const allTags = useMemo(() => {
@@ -38,15 +40,30 @@ const NotesManager = () => {
     return Array.from(folders).sort();
   }, [notes]);
 
+  // Safe content extractor — handles both plain string and Notion block JSON
+  const getNoteSearchText = (note) => {
+    if (!note.content) return '';
+    if (typeof note.content === 'string') return note.content;
+    // Notion blocks: content is JSON array of blocks
+    try {
+      const blocks = typeof note.content === 'object' ? note.content : JSON.parse(note.content);
+      if (Array.isArray(blocks)) {
+        return blocks.map(b => b.content || '').join(' ');
+      }
+    } catch (_) { /* ignore parse errors */ }
+    return '';
+  };
+
   // Filter and sort notes
   const filteredNotes = useMemo(() => {
     let filtered = [...notes];
 
-    // Search filter
+    // Search filter — safe against non-string content fields
     if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       filtered = filtered.filter(note =>
-        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+        (note.title || '').toLowerCase().includes(q) ||
+        getNoteSearchText(note).toLowerCase().includes(q)
       );
     }
 
@@ -104,18 +121,25 @@ const NotesManager = () => {
     setSelectedNote(null);
   };
 
-  const handleDeleteNote = async (id) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      await deleteNote(id);
-      if (selectedNote?.id === id) {
-        setSelectedNote(null);
-        setShowEditor(false);
-      }
-    }
+  const handleDeleteNote = (id) => {
+    setConfirmState({
+      message: 'Delete this note?',
+      detail: 'The note will be moved to trash and can be recovered.',
+      confirmLabel: 'Delete Note',
+      danger: true,
+      onConfirm: async () => {
+        await deleteNote(id);
+        if (selectedNote?.id === id) {
+          setSelectedNote(null);
+          setShowEditor(false);
+        }
+      },
+    });
   };
 
   return (
     <div className="notes-manager flex flex-col md:flex-row h-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Mobile Overlay */}
       {showSidebar && (
         <div

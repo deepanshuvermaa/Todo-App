@@ -120,6 +120,17 @@ export class AlarmSoundManager {
       clearInterval(this.fadeInterval);
       this.fadeInterval = null;
     }
+
+    // Always clear vibration interval — fixes the permanent vibration bug
+    if (this.vibrateInterval) {
+      clearInterval(this.vibrateInterval);
+      this.vibrateInterval = null;
+    }
+
+    // Stop any ongoing vibration immediately
+    if ('vibrate' in navigator) {
+      navigator.vibrate(0);
+    }
   }
 
   snooze(minutes = 5) {
@@ -174,14 +185,21 @@ export class AlarmSoundManager {
   }
 
   startVibratingAlarm() {
+    // Clear any existing vibration interval before creating a new one
+    if (this.vibrateInterval) {
+      clearInterval(this.vibrateInterval);
+      this.vibrateInterval = null;
+    }
+
     this.vibrate();
 
-    // Repeat vibration every 2 seconds
+    // Repeat vibration every 2 seconds while alarm is playing
     this.vibrateInterval = setInterval(() => {
       if (this.isPlaying) {
         this.vibrate();
       } else {
         clearInterval(this.vibrateInterval);
+        this.vibrateInterval = null;
       }
     }, 2000);
   }

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import useAppStore from '@/store/useAppStore';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const MigrationPrompt = ({ onComplete }) => {
   const [isMigrating, setIsMigrating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('');
+  const [confirmState, setConfirmState] = useState(null);
   const { migrateFromLegacy } = useAppStore();
 
   const handleMigrate = async () => {
@@ -47,13 +49,18 @@ const MigrationPrompt = ({ onComplete }) => {
   };
 
   const handleSkip = () => {
-    if (window.confirm('Are you sure you want to skip migration? You can migrate your data later from settings.')) {
-      onComplete();
-    }
+    setConfirmState({
+      message: 'Skip data migration?',
+      detail: 'You can migrate your data later from Settings. Your existing data will remain untouched.',
+      confirmLabel: 'Skip Migration',
+      danger: false,
+      onConfirm: () => onComplete(),
+    });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

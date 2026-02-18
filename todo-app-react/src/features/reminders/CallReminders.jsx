@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import useAppStore from '@/store/useAppStore';
 import ReminderForm from './ReminderForm';
 import ReminderCard from './ReminderCard';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CallReminders = () => {
@@ -10,6 +11,7 @@ const CallReminders = () => {
   const [editingReminder, setEditingReminder] = useState(null);
   const [filter, setFilter] = useState('pending'); // pending, completed, all
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmState, setConfirmState] = useState(null);
 
   // Filter and sort reminders
   const filteredReminders = useMemo(() => {
@@ -93,10 +95,14 @@ const CallReminders = () => {
     setShowForm(false);
   };
 
-  const handleDeleteReminder = async (id) => {
-    if (window.confirm('Are you sure you want to delete this reminder?')) {
-      await deleteCallReminder(id);
-    }
+  const handleDeleteReminder = (id) => {
+    setConfirmState({
+      message: 'Delete this reminder?',
+      detail: 'This call reminder will be permanently deleted.',
+      confirmLabel: 'Delete Reminder',
+      danger: true,
+      onConfirm: () => deleteCallReminder(id),
+    });
   };
 
   const handleCompleteReminder = async (reminder) => {
@@ -126,6 +132,7 @@ const CallReminders = () => {
 
   return (
     <div className="call-reminders">
+      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(null)} />
       {/* Header */}
       <div className="mb-6">
         {/* Centered Title */}
