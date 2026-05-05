@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import StorageAdapter from '@/core/storage/StorageAdapter';
 import { supabaseService } from '@/services/SupabaseService';
 
@@ -13,7 +13,6 @@ const storage = new StorageAdapter();
 const useAppStore = create(
   devtools(
     subscribeWithSelector(
-      persist(
         (set, get) => {
           // Helper: merge two arrays by 'id', keeping items from both sides
           // For items with the same id, prefer the one with the newer timestamp
@@ -504,8 +503,8 @@ const useAppStore = create(
             const expenses = [...get().expenses, newExpense];
             set({ expenses });
             await storage.set('expenses', expenses);
+            await get().syncToCloud();
 
-            get().queuePendingChange('expenses', newExpense);
             return newExpense;
           },
 
@@ -515,14 +514,14 @@ const useAppStore = create(
             );
             set({ expenses });
             await storage.set('expenses', expenses);
-            get().queuePendingChange('expenses', { id, ...updates });
+            await get().syncToCloud();
           },
 
           deleteExpense: async (id) => {
             const expenses = get().expenses.filter(expense => expense.id !== id);
             set({ expenses });
             await storage.set('expenses', expenses);
-            get().queuePendingChange('expenses', { id, deleted: true });
+            await get().syncToCloud();
           },
 
           // Budget Management
@@ -898,13 +897,13 @@ const useAppStore = create(
               clearTimeout(get()._syncDebounce);
             }
 
-            // Set new 2-second debounce timeout
+            // Set new 500ms debounce timeout
             const timeout = setTimeout(() => {
               if (navigator.onLine && get().isAuthenticated) {
                 get().syncToCloud();
               }
               set({ _syncDebounce: null });
-            }, 2000);
+            }, 500);
 
             set({ _syncDebounce: timeout });
           },
@@ -1892,105 +1891,7 @@ const useAppStore = create(
               console.error('Setup realtime sync failed:', error);
             }
           }
-        })},
-        {
-          name: 'todo-app-storage',
-          storage: {
-            getItem: async (name) => {
-              const value = await storage.get(name);
-              return value ? JSON.stringify(value) : null;
-            },
-            setItem: async (name, value) => {
-              try {
-                const parsed = typeof value === 'string' ? JSON.parse(value) : value;
-                await storage.set(name, parsed);
-              } catch (error) {
-                console.error('Storage setItem error:', error);
-                await storage.set(name, value);
-              }
-            },
-            removeItem: async (name) => {
-              await storage.remove(name);
-            }
-          },
-          // Validate and fix corrupted data on deserialize
-          deserialize: (str) => {
-            try {
-              if (!str) return {};
-
-              const data = JSON.parse(str);
-              if (!data || typeof data !== 'object') return {};
-
-              // Fix array fields that might be corrupted
-              const arrayFields = [
-                'tasks', 'expenses', 'notes', 'habits', 'meals', 'callReminders',
-                'completedCallReminders', 'bucketList', 'visionBoard', 'journalEntries',
-                'quotes', 'alarms', 'movies', 'links', 'budgetAlerts', 'locationReminders',
-                'trash'
-              ];
-
-              for (const field of arrayFields) {
-                if (data[field] !== undefined) {
-                  if (!Array.isArray(data[field])) {
-                    console.warn(`Fixing corrupted field "${field}": expected array, got ${typeof data[field]}`);
-                    delete data[field]; // Remove bad field, let initializer set default
-                  }
-                }
-              }
-
-              // Fix object fields
-              const objectFields = ['habitHistory', 'streakData', 'engagementStats'];
-              for (const field of objectFields) {
-                if (data[field] !== undefined) {
-                  if (typeof data[field] !== 'object' || Array.isArray(data[field])) {
-                    console.warn(`Fixing corrupted field "${field}": expected object, got ${typeof data[field]}`);
-                    delete data[field]; // Remove bad field, let initializer set default
-                  }
-                }
-              }
-
-              return data;
-            } catch (error) {
-              console.error('Deserialize error, clearing corrupted data:', error);
-              // Clear the corrupted storage
-              storage.clear().catch(console.error);
-              return {}; // Return empty object on parse error - fresh start
-            }
-          },
-          partialize: (state) => ({
-            // Only persist data, not UI state
-            tasks: state.tasks,
-            expenses: state.expenses,
-            notes: state.notes,
-            habits: state.habits,
-            habitHistory: state.habitHistory,
-            meals: state.meals,
-            callReminders: state.callReminders,
-            completedCallReminders: state.completedCallReminders,
-            bucketList: state.bucketList,
-            visionBoard: state.visionBoard,
-            journalEntries: state.journalEntries,
-            quotes: state.quotes,
-            streakData: state.streakData,
-            alarms: state.alarms,
-            movies: state.movies,
-            links: state.links,
-            budgetAlerts: state.budgetAlerts,
-            engagementStats: state.engagementStats,
-            locationReminders: state.locationReminders,
-            onboardingCompleted: state.onboardingCompleted,
-            lastRolloverDate: state.lastRolloverDate,
-            darkMode: state.darkMode,
-            userEmail: state.userEmail,
-            userId: state.userId,
-            lastSyncTime: state.lastSyncTime,
-            // F6: Persist trash so deleted items survive reloads
-            trash: state.trash,
-            // H6: Persist budget
-            budget: state.budget,
-          })
-        }
-      )
+        })}
     )
   )
 );

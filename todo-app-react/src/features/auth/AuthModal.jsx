@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabaseService } from '../../services/SupabaseService';
+import '@/styles/fonts.css';
 
 export default function AuthModal({ onSuccess, onClose }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -41,7 +42,7 @@ export default function AuthModal({ onSuccess, onClose }) {
       return;
     }
 
-    setSuccess('✅ Account created! You can now sign in.');
+    setSuccess('Account created! You can now sign in.');
     setTimeout(() => {
       setMode('login');
       setPassword('');
@@ -76,145 +77,174 @@ export default function AuthModal({ onSuccess, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}
+      className="fixed inset-0 min-h-screen w-full flex items-center justify-center z-50"
+      style={{ fontFamily: "'Inter', sans-serif" }}
     >
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-sm w-full p-8 relative">
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
-            aria-label="Close"
-          >
-            &times;
-          </button>
-        )}
-        <h1 className="text-3xl font-bold text-center mb-2 text-indigo-600">LIFE</h1>
-        <p className="text-center text-gray-600 dark:text-gray-300 mb-8">Personal Productivity App</p>
+      {/* Full-screen video background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        poster="https://images.unsplash.com/photo-1557683316-973673baf926?w=1600&q=60"
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260424_064411_9e9d7f84-9277-41f4-ab10-59172d89e6be.mp4"
+          type="video/mp4"
+        />
+      </video>
 
-        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-slate-700">
-          <button
-            onClick={() => setMode('login')}
-            className={`flex-1 pb-3 text-center font-semibold transition ${
-              mode === 'login'
-                ? 'text-indigo-600 border-b-2 border-indigo-600'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setMode('signup')}
-            className={`flex-1 pb-3 text-center font-semibold transition ${
-              mode === 'signup'
-                ? 'text-indigo-600 border-b-2 border-indigo-600'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
 
-        <form onSubmit={mode === 'login' ? handleSignIn : handleSignUp} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
-              placeholder="your@email.com"
-              disabled={loading}
-            />
+      {/* Back button */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-6 left-6 z-20 text-white/80 hover:text-white flex items-center gap-2 text-sm"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+      )}
+
+      {/* Centered login card */}
+      <div className="relative z-10 flex flex-col items-center w-full px-4">
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full p-8 border border-white/20">
+          {/* Logo */}
+          <h1 className="text-4xl font-bold text-center mb-1 text-indigo-600">LIFE</h1>
+          <p className="text-center text-gray-500 text-sm mb-8">Personal Productivity Suite</p>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6 border-b border-gray-200">
+            <button
+              onClick={() => setMode('login')}
+              className={`flex-1 pb-3 text-center font-semibold transition ${
+                mode === 'login'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setMode('signup')}
+              className={`flex-1 pb-3 text-center font-semibold transition ${
+                mode === 'signup'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Sign Up
+            </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
-            <div className="relative">
+          {/* Form */}
+          <form onSubmit={mode === 'login' ? handleSignIn : handleSignUp} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white pr-10"
-                placeholder="••••••••"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none transition"
+                placeholder="your@email.com"
                 disabled={loading}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
             </div>
-          </div>
 
-          {mode === 'signup' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Confirm Password
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
               </label>
               <div className="relative">
                 <input
-                  type={showPasswordConfirm ? 'text' : 'password'}
-                  value={passwordConfirm}
-                  onChange={(e) => setPasswordConfirm(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white pr-10"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none transition pr-12"
                   placeholder="••••••••"
                   disabled={loading}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                  className="absolute right-3 top-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-3.5 text-gray-500 hover:text-gray-700"
                 >
-                  {showPasswordConfirm ? '🙈' : '👁️'}
+                  {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
-          )}
 
-          {error && (
-            <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm space-y-2">
-              <div className="font-semibold">❌ {error}</div>
-              {error.toLowerCase().includes('email') && (
-                <div className="text-xs opacity-90">
-                  💡 <strong>Fix:</strong> Check your email for confirmation link, or{' '}
-                  <a
-                    href="https://app.supabase.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:text-red-600"
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPasswordConfirm ? 'text' : 'password'}
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    className="w-full bg-white/80 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none transition pr-12"
+                    placeholder="••••••••"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                    className="absolute right-4 top-3.5 text-gray-500 hover:text-gray-700"
                   >
-                    disable email confirmation
-                  </a>{' '}
-                  in Supabase settings
+                    {showPasswordConfirm ? '🙈' : '👁️'}
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {success && (
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm">
-              {success}
-            </div>
-          )}
+            {error && (
+              <div className="p-3 bg-red-50 text-red-700 rounded-xl text-sm space-y-2 border border-red-100">
+                <div className="font-semibold">{error}</div>
+                {error.toLowerCase().includes('email') && (
+                  <div className="text-xs opacity-90">
+                    <strong>Tip:</strong> Check your email for confirmation link, or{' '}
+                    <a
+                      href="https://app.supabase.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-red-600"
+                    >
+                      disable email confirmation
+                    </a>{' '}
+                    in Supabase settings
+                  </div>
+                )}
+              </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-2 rounded-lg transition"
-          >
-            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-          </button>
-        </form>
+            {success && (
+              <div className="p-3 bg-green-50 text-green-700 rounded-xl text-sm border border-green-100">
+                {success}
+              </div>
+            )}
 
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
-          Your data is encrypted and synced across all your devices
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+        </div>
+
+        {/* Bottom secure text */}
+        <p className="text-center text-sm text-white/70 mt-6">
+          Your data is encrypted and synced securely
         </p>
       </div>
     </div>

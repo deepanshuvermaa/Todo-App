@@ -16,14 +16,20 @@ const ExpenseManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [filterMode, setFilterMode] = useState('month');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const formRef = useRef(null);
 
   // Filter expenses based on criteria
   const filteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
-      // Month filter
-      if (selectedMonth !== 'all' && !expense.date.startsWith(selectedMonth)) {
-        return false;
+      // Date filter
+      if (filterMode === 'month') {
+        if (selectedMonth !== 'all' && !expense.date.startsWith(selectedMonth)) return false;
+      } else {
+        if (dateFrom && expense.date < dateFrom) return false;
+        if (dateTo && expense.date > dateTo) return false;
       }
 
       // Category filter
@@ -38,7 +44,7 @@ const ExpenseManager = () => {
 
       return true;
     });
-  }, [expenses, selectedMonth, selectedCategory, searchQuery]);
+  }, [expenses, selectedMonth, selectedCategory, searchQuery, filterMode, dateFrom, dateTo]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -140,15 +146,47 @@ const ExpenseManager = () => {
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          {/* Month Filter */}
+          {/* Date Filter */}
           <div>
-            <label className="block text-sm font-medium mb-2">Month</label>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value || 'all')}
-              className="input-field"
-            />
+            <div className="bg-gray-100 rounded-lg p-1 flex mb-2">
+              <button
+                onClick={() => setFilterMode('month')}
+                className={filterMode === 'month' ? 'bg-white shadow-sm rounded-md px-3 py-1 text-sm font-medium' : 'px-3 py-1 text-sm text-gray-500'}
+              >
+                Month
+              </button>
+              <button
+                onClick={() => setFilterMode('range')}
+                className={filterMode === 'range' ? 'bg-white shadow-sm rounded-md px-3 py-1 text-sm font-medium' : 'px-3 py-1 text-sm text-gray-500'}
+              >
+                Date Range
+              </button>
+            </div>
+            {filterMode === 'month' ? (
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value || 'all')}
+                className="input-field"
+              />
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  placeholder="From"
+                  className="input-field flex-1"
+                />
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  placeholder="To"
+                  className="input-field flex-1"
+                />
+              </div>
+            )}
           </div>
 
           {/* Category Filter */}
