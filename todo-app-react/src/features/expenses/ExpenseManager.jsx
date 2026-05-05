@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import useAppStore from '@/store/useAppStore';
 import ExpenseForm from './ExpenseForm';
 import ExpenseList from './ExpenseList';
@@ -16,6 +16,7 @@ const ExpenseManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const formRef = useRef(null);
 
   // Filter expenses based on criteria
   const filteredExpenses = useMemo(() => {
@@ -113,7 +114,15 @@ const ExpenseManager = () => {
         {/* Controls Row */}
         <div className="flex justify-center mb-4">
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={() => {
+              setShowAddForm(!showAddForm);
+              // Scroll to form on mobile after state updates
+              setTimeout(() => {
+                if (formRef.current && !showAddForm) {
+                  formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 50);
+            }}
             className="btn-ultra flex items-center gap-2 px-4 py-2"
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -175,6 +184,7 @@ const ExpenseManager = () => {
       <AnimatePresence>
         {(showAddForm || editingExpense) && (
           <motion.div
+            ref={formRef}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}

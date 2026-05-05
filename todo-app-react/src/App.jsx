@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-route
 import useAppStore from '@/store/useAppStore';
 import Sidebar from './components/Sidebar';
 import GlobalSearch from './components/GlobalSearch';
+import ErrorBoundary from './components/ErrorBoundary';
 import TaskManager from '@/features/tasks/TaskManager';
 import ExpenseManager from '@/features/expenses/ExpenseManager';
 import NotesManager from '@/features/notes/NotesManager';
@@ -21,8 +22,9 @@ import LinkManager from '@/features/links/LinkManager';
 import History from '@/features/history/History';
 import About from '@/features/about/About';
 import GlobalVoiceButton from './components/GlobalVoiceButton';
-import MigrationPrompt from './components/MigrationPrompt';
 import LoadingScreen from './components/LoadingScreen';
+import AuthModal from '@/features/auth/AuthModal';
+import LandingPage from '@/pages/LandingPage';
 import useKeyboardShortcuts from '@/hooks/useKeyboardShortcuts';
 import './index.css';
 
@@ -30,12 +32,13 @@ function AppContent() {
   const {
     initialize,
     isLoading,
-    darkMode
+    darkMode,
+    isAuthenticated
   } = useAppStore();
 
-  const [showMigration, setShowMigration] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const navigate = useNavigate();
 
   // Show sidebar by default on desktop
@@ -54,9 +57,6 @@ function AppContent() {
   useEffect(() => {
     // Initialize app on mount
     initialize();
-
-    // Check if migration is needed
-    checkMigration();
   }, []);
 
   // Apply dark mode on initial load and when it changes
@@ -67,18 +67,6 @@ function AppContent() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
-
-  const checkMigration = async () => {
-    // Check if old app data exists
-    if (typeof localStorage !== 'undefined') {
-      const hasOldData = localStorage.getItem('tasks') !== null;
-      const hasMigrated = localStorage.getItem('todo_migrationCompleted') !== null;
-
-      if (hasOldData && !hasMigrated) {
-        setShowMigration(true);
-      }
-    }
-  };
 
   // F8: Keyboard shortcuts
   useKeyboardShortcuts([
@@ -143,13 +131,29 @@ function AppContent() {
     return <LoadingScreen />;
   }
 
-  if (showMigration) {
-    return <MigrationPrompt onComplete={() => setShowMigration(false)} />;
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LandingPage onLogin={() => setShowAuthModal(true)} />
+        {showAuthModal && (
+          <AuthModal
+            onSuccess={() => {
+              setShowAuthModal(false);
+              initialize();
+            }}
+            onClose={() => setShowAuthModal(false)}
+          />
+        )}
+      </>
+    );
   }
 
   return (
-    <div className="app min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* F5: Global Search overlay */}
+    <ErrorBoundary>
+      <div className="app min-h-screen bg-gray-50 dark:bg-gray-900">
+        {isLoading && <LoadingScreen />}
+
+        {/* F5: Global Search overlay */}
       <GlobalSearch
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -247,14 +251,16 @@ function AppContent() {
           </main>
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }
 
 // Wrap AppContent in Router so useNavigate works
 function App() {
+  const baseUrl = import.meta.env.VITE_BASE_URL || '/todo-app/';
   return (
-    <Router basename="/Todo-App">
+    <Router basename={baseUrl}>
       <AppContent />
     </Router>
   );

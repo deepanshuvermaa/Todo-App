@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import useAppStore from '@/store/useAppStore';
 
 const LinkManager = () => {
-  const { user } = useAppStore();
+  const { links, addLink, updateLink, deleteLink } = useAppStore();
 
-  const [links, setLinks] = useState([]);
   const [urlInput, setUrlInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,19 +12,6 @@ const LinkManager = () => {
   const [newCategory, setNewCategory] = useState('');
 
   const categories = ['all', 'work', 'personal', 'resources', 'social', 'news', 'entertainment'];
-
-  useEffect(() => {
-    // Load saved links from localStorage
-    const savedLinks = localStorage.getItem('linkManager_links');
-    if (savedLinks) {
-      setLinks(JSON.parse(savedLinks));
-    }
-  }, []);
-
-  useEffect(() => {
-    // Save links to localStorage whenever links change
-    localStorage.setItem('linkManager_links', JSON.stringify(links));
-  }, [links]);
 
   const extractLinkPreview = async (url) => {
     // Simulate link preview extraction (in production, use a service like LinkPreview API)
@@ -94,7 +80,7 @@ const LinkManager = () => {
     }
   };
 
-  const addLink = async () => {
+  const handleAddLink = async () => {
     if (!urlInput.trim()) return;
 
     try {
@@ -109,8 +95,7 @@ const LinkManager = () => {
 
       const linkData = await extractLinkPreview(urlInput);
 
-      const newLink = {
-        id: Date.now(),
+      await addLink({
         ...linkData,
         category: newCategory || 'personal',
         tags: [],
@@ -118,9 +103,8 @@ const LinkManager = () => {
         isBookmarked: false,
         visitCount: 0,
         lastVisited: null
-      };
+      });
 
-      setLinks(prev => [newLink, ...prev]);
       setUrlInput('');
       setNewCategory('');
 
@@ -129,35 +113,30 @@ const LinkManager = () => {
     }
   };
 
-  const removeLink = (linkId) => {
-    setLinks(prev => prev.filter(link => link.id !== linkId));
+  const removeLink = async (linkId) => {
+    await deleteLink(linkId);
   };
 
-  const toggleBookmark = (linkId) => {
-    setLinks(prev => prev.map(link =>
-      link.id === linkId
-        ? { ...link, isBookmarked: !link.isBookmarked }
-        : link
-    ));
+  const toggleBookmark = async (linkId) => {
+    const link = links.find(l => l.id === linkId);
+    if (link) {
+      await updateLink(linkId, { isBookmarked: !link.isBookmarked });
+    }
   };
 
-  const visitLink = (linkId, url) => {
-    setLinks(prev => prev.map(link =>
-      link.id === linkId
-        ? {
-            ...link,
-            visitCount: link.visitCount + 1,
-            lastVisited: new Date().toISOString()
-          }
-        : link
-    ));
+  const visitLink = async (linkId, url) => {
+    const link = links.find(l => l.id === linkId);
+    if (link) {
+      await updateLink(linkId, {
+        visitCount: link.visitCount + 1,
+        lastVisited: new Date().toISOString()
+      });
+    }
     window.open(url, '_blank');
   };
 
-  const updateLinkNotes = (linkId, notes) => {
-    setLinks(prev => prev.map(link =>
-      link.id === linkId ? { ...link, notes } : link
-    ));
+  const updateLinkNotes = async (linkId, notes) => {
+    await updateLink(linkId, { notes });
   };
 
   const filteredLinks = links.filter(link => {
@@ -220,7 +199,7 @@ const LinkManager = () => {
                   type="url"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addLink()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddLink()}
                   placeholder="Enter URL (e.g., https://example.com)"
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
                 />
@@ -241,7 +220,7 @@ const LinkManager = () => {
                 </select>
 
                 <button
-                  onClick={addLink}
+                  onClick={handleAddLink}
                   disabled={isProcessing || !urlInput.trim()}
                   className="w-full sm:w-auto px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
                 >

@@ -1,4 +1,7 @@
 import Papa from 'papaparse';
+import StorageAdapter from '@/core/storage/StorageAdapter';
+
+const storage = new StorageAdapter();
 
 class SmartMovieService {
   constructor() {
@@ -185,7 +188,7 @@ class SmartMovieService {
   async saveFavorite(movie) {
     try {
       // Get existing favorites
-      const favorites = JSON.parse(localStorage.getItem('movieFavorites') || '[]');
+      const favorites = (await storage.get('movieFavorites')) || [];
 
       // Add new favorite with date
       const favoriteEntry = {
@@ -199,14 +202,7 @@ class SmartMovieService {
       const exists = favorites.some(f => f.movieName === movie.title);
       if (!exists) {
         favorites.push(favoriteEntry);
-        localStorage.setItem('movieFavorites', JSON.stringify(favorites));
-
-        // Also save to Google Sheets if connected
-        if (window.googleSheetsService && window.googleSheetsService.isInitialized) {
-          await window.googleSheetsService.appendData('MovieFavorites', [
-            [favoriteEntry.date, favoriteEntry.movieName, favoriteEntry.year, favoriteEntry.rating]
-          ]);
-        }
+        await storage.set('movieFavorites', favorites);
       }
 
       return { success: true, message: 'Added to favorites!' };
@@ -219,9 +215,9 @@ class SmartMovieService {
   // Remove favorite
   async removeFavorite(movieTitle) {
     try {
-      const favorites = JSON.parse(localStorage.getItem('movieFavorites') || '[]');
+      const favorites = (await storage.get('movieFavorites')) || [];
       const filtered = favorites.filter(f => f.movieName !== movieTitle);
-      localStorage.setItem('movieFavorites', JSON.stringify(filtered));
+      await storage.set('movieFavorites', filtered);
       return { success: true };
     } catch (error) {
       console.error('Error removing favorite:', error);
@@ -230,14 +226,14 @@ class SmartMovieService {
   }
 
   // Check if movie is favorited
-  isFavorited(movieTitle) {
-    const favorites = JSON.parse(localStorage.getItem('movieFavorites') || '[]');
+  async isFavorited(movieTitle) {
+    const favorites = (await storage.get('movieFavorites')) || [];
     return favorites.some(f => f.movieName === movieTitle);
   }
 
   // Get all favorites
-  getFavorites() {
-    return JSON.parse(localStorage.getItem('movieFavorites') || '[]');
+  async getFavorites() {
+    return (await storage.get('movieFavorites')) || [];
   }
 }
 

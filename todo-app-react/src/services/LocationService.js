@@ -1,6 +1,10 @@
 // Location-based Reminder Service
 // Provides geofencing, location tracking, and proximity-based notifications
 
+import StorageAdapter from '@/core/storage/StorageAdapter';
+
+const storage = new StorageAdapter();
+
 class LocationService {
   constructor() {
     this.watchId = null;
@@ -393,21 +397,21 @@ class LocationService {
     return suggestions;
   }
 
-  // Save reminders to localStorage
-  saveLocationReminders() {
+  // Save reminders to storage
+  async saveLocationReminders() {
     try {
-      localStorage.setItem('locationReminders', JSON.stringify(this.locationReminders));
+      await storage.set('locationReminders', this.locationReminders);
     } catch (error) {
       console.error('Error saving location reminders:', error);
     }
   }
 
-  // Load reminders from localStorage
-  loadLocationReminders() {
+  // Load reminders from storage
+  async loadLocationReminders() {
     try {
-      const saved = localStorage.getItem('locationReminders');
+      const saved = await storage.get('locationReminders');
       if (saved) {
-        this.locationReminders = JSON.parse(saved);
+        this.locationReminders = saved;
 
         // Recreate geofences
         this.locationReminders.forEach(reminder => {

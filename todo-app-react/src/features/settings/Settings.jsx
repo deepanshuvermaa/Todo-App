@@ -11,12 +11,9 @@ const Settings = () => {
     toggleDarkMode,
     isAuthenticated,
     userEmail,
-    sheetUrl,
-    signInToGoogle,
-    signOutFromGoogle,
     syncStatus,
-    syncToSheets,
-    syncFromSheets,
+    syncToCloud,
+    signOut,
     lastSyncTime
   } = useAppStore();
 
@@ -171,58 +168,34 @@ const Settings = () => {
       ]
     },
     {
-      title: 'Cloud Sync',
+      title: 'Account',
       items: [
         {
-          title: 'Google Sheets Integration',
-          description: isAuthenticated ? `Connected as ${userEmail}` : 'Sync your data with Google Sheets',
+          title: 'Cloud Sync Status',
+          description: isAuthenticated ? `Connected as ${userEmail}` : 'Not connected',
           component: (
             <div className="flex flex-col gap-2">
               {isAuthenticated ? (
                 <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={syncToSheets}
-                      disabled={syncStatus === 'syncing'}
-                      className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
-                    >
-                      {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
-                    </button>
-                    <button
-                      onClick={syncFromSheets}
-                      disabled={syncStatus === 'syncing'}
-                      className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50"
-                    >
-                      Pull from Sheets
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Last sync: {formatLastSync(lastSyncTime)}
-                  </p>
-                  {sheetUrl && (
-                    <a
-                      href={sheetUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-500 hover:underline"
-                    >
-                      View Spreadsheet
-                    </a>
-                  )}
                   <button
-                    onClick={signOutFromGoogle}
+                    onClick={syncToCloud}
+                    disabled={syncStatus === 'syncing'}
+                    className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
+                  </button>
+                  <p className="text-xs text-gray-500">
+                    Last sync: {lastSyncTime ? new Date(lastSyncTime).toLocaleTimeString() : 'Never'}
+                  </p>
+                  <button
+                    onClick={signOut}
                     className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
                   >
-                    Disconnect
+                    Sign Out
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={signInToGoogle}
-                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-                >
-                  Connect Google Sheets
-                </button>
+                <p className="text-xs text-gray-500">You are not signed in</p>
               )}
             </div>
           )
@@ -286,8 +259,8 @@ const Settings = () => {
           )
         },
         {
-          title: 'Features',
-          description: 'Offline-first, Cloud sync, Voice input, Screenshots',
+          title: 'Core Features',
+          description: 'Offline-first, Real-time sync, OCR text extraction, Link management',
           component: null
         }
       ]

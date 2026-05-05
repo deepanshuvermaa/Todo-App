@@ -1,6 +1,10 @@
 // User Engagement & Retention Service
 // Gamification, achievements, streaks, and daily challenges
 
+import StorageAdapter from '@/core/storage/StorageAdapter';
+
+const storage = new StorageAdapter();
+
 class EngagementService {
   constructor() {
     this.userStats = {
@@ -26,7 +30,7 @@ class EngagementService {
 
   async init() {
     // Load user stats
-    this.loadUserStats();
+    await this.loadUserStats();
 
     // Check daily visit
     this.checkDailyVisit();
@@ -536,20 +540,20 @@ class EngagementService {
   }
 
   // Save user stats
-  saveUserStats() {
+  async saveUserStats() {
     try {
-      localStorage.setItem('userEngagementStats', JSON.stringify(this.userStats));
+      await storage.set('engagementStats', this.userStats);
     } catch (error) {
       console.error('Error saving user stats:', error);
     }
   }
 
   // Load user stats
-  loadUserStats() {
+  async loadUserStats() {
     try {
-      const saved = localStorage.getItem('userEngagementStats');
+      const saved = await storage.get('engagementStats');
       if (saved) {
-        this.userStats = JSON.parse(saved);
+        this.userStats = saved;
       }
     } catch (error) {
       console.error('Error loading user stats:', error);

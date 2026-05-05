@@ -20,7 +20,7 @@ const TaskManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get today's tasks
-  const todayStr = currentDate.toISOString().split('T')[0];
+  const todayStr = currentDate.split('T')[0];
   const todayTasks = tasks.filter(task => task.date === todayStr);
 
   // Apply filters

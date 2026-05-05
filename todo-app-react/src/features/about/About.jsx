@@ -24,18 +24,18 @@ const About = () => {
     },
     {
       icon: '☁️',
-      title: 'Google Sheets Sync',
-      description: 'Sync all data automatically with your personal Google Sheet for backup and access from anywhere.'
+      title: 'Cloud Sync',
+      description: 'Real-time sync across all your devices. Your data updates instantly with Supabase backend.'
     },
     {
       icon: '💰',
       title: 'Expense Tracking',
-      description: 'Comprehensive expense tracking with category-wise monthly budgets in INR currency.'
+      description: 'Comprehensive expense tracking with category-wise monthly budgets and budget alerts.'
     },
     {
       icon: '🍽️',
       title: 'Meal & Nutrition Logging',
-      description: 'Track your daily meals, calories, and nutrition intake with detailed logging capabilities.'
+      description: 'Track your daily meals and nutrition intake with detailed logging and calorie tracking.'
     },
     {
       icon: '🎯',
@@ -45,12 +45,12 @@ const About = () => {
     {
       icon: '📝',
       title: 'Smart Notes',
-      description: 'Rich text notes with voice input, OCR text extraction, and link embedding capabilities.'
+      description: 'Rich text notes with folders, tags, and organize your thoughts in one place.'
     },
     {
       icon: '📖',
       title: 'Daily Journaling',
-      description: 'Reflect on your day with structured journal entries, mood tracking, and gratitude logging.'
+      description: 'Reflect on your day with structured journal entries and personal growth tracking.'
     },
     {
       icon: '📞',
@@ -63,19 +63,19 @@ const About = () => {
       description: 'Track your life goals and dreams with detailed progress monitoring.'
     },
     {
-      icon: '🎤',
-      title: 'Voice Commands',
-      description: 'Control the app hands-free with voice commands for adding tasks, notes, and navigation.'
-    },
-    {
       icon: '📸',
       title: 'OCR Text Extraction',
-      description: 'Extract text from images using advanced OCR technology with camera or file upload.'
+      description: 'Extract text from images using advanced Tesseract.js OCR with multiple languages.'
     },
     {
       icon: '🔗',
       title: 'Link Management',
       description: 'Save and organize important links with automatic previews and categorization.'
+    },
+    {
+      icon: '🎬',
+      title: 'Movie Recommendations',
+      description: 'Track movies, get smart recommendations, and manage your watchlist.'
     },
     {
       icon: '📱',
@@ -88,14 +88,14 @@ const About = () => {
       description: 'Easy on the eyes with beautiful dark theme that adapts to your preferences.'
     },
     {
-      icon: '📊',
-      title: 'Activity History',
-      description: 'Track your productivity and see all your activities with detailed analytics.'
+      icon: '⏰',
+      title: 'Alarms & Reminders',
+      description: 'Set alarms, schedule reminders, and never miss important moments.'
     },
     {
       icon: '🔒',
-      title: 'Privacy Focused',
-      description: 'Your data stays private. Only you have access through your personal Google account.'
+      title: 'Privacy First',
+      description: 'Your data stays private. Secure authentication and encrypted cloud storage with Supabase.'
     }
   ];
 
@@ -216,19 +216,19 @@ const About = () => {
           <div className="space-y-3 text-gray-600 dark:text-gray-400">
             <p>
               <strong>All-in-One Solution:</strong> Instead of using multiple apps, manage your entire
-              life from one unified interface.
+              life from one unified interface - tasks, notes, expenses, habits, and more.
             </p>
             <p>
-              <strong>Privacy First:</strong> Your data belongs to you. Everything syncs to your
-              personal Google Sheet that only you control.
+              <strong>Privacy & Security:</strong> Your data is encrypted and stored securely with Supabase.
+              Only you control your information with your personal account.
             </p>
             <p>
               <strong>Works Everywhere:</strong> Progressive Web App technology means it works
-              seamlessly on any device, online or offline.
+              seamlessly on any device, online or offline. Install like a native app.
             </p>
             <p>
-              <strong>Voice Enabled:</strong> Modern voice commands make data entry fast and
-              hands-free when you need it.
+              <strong>Real-Time Sync:</strong> All changes sync instantly across your devices so you're
+              always up-to-date wherever you are.
             </p>
           </div>
         </div>
@@ -242,25 +242,25 @@ const About = () => {
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">1</span>
               <p className="text-gray-600 dark:text-gray-400">
-                Connect your Google account in Settings for cloud sync
+                Sign up with your email and create a secure account
               </p>
             </div>
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">2</span>
               <p className="text-gray-600 dark:text-gray-400">
-                Start adding tasks, expenses, and notes to begin tracking
+                Start adding tasks, expenses, notes, and other life data
               </p>
             </div>
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">3</span>
               <p className="text-gray-600 dark:text-gray-400">
-                Install the app on your device for the best experience
+                Install as app for offline access and native experience
               </p>
             </div>
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm">4</span>
               <p className="text-gray-600 dark:text-gray-400">
-                Explore voice commands and advanced features
+                Access your data across all devices in real-time
               </p>
             </div>
           </div>

@@ -23,9 +23,9 @@ import {
   AboutIcon,
   SettingsIcon,
   MoonIcon,
-  GoogleIcon,
   SignOutIcon
 } from '@/components/icons/Icons';
+import SyncStatus from './SyncStatus';
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
@@ -65,12 +65,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     bucketList,
     journalEntries,
     darkMode,
-    toggleDarkMode,
-    syncStatus,
-    signInToGoogle,
-    signOutFromGoogle,
-    isAuthenticated,
-    userEmail
+    toggleDarkMode
   } = useAppStore();
 
   const menuItems = [
@@ -206,26 +201,6 @@ const Sidebar = ({ isOpen, onToggle }) => {
     return location.pathname === path;
   };
 
-  const getSyncStatusColor = () => {
-    switch (syncStatus) {
-      case 'syncing': return 'text-blue-500';
-      case 'success': return 'text-green-500';
-      case 'failed': return 'text-red-500';
-      case 'offline': return 'text-gray-500';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getSyncStatusText = () => {
-    switch (syncStatus) {
-      case 'syncing': return 'Syncing...';
-      case 'success': return 'Synced';
-      case 'failed': return 'Sync failed';
-      case 'offline': return 'Offline';
-      default: return 'Ready';
-    }
-  };
-
   return (
     <>
       {/* Mobile Overlay */}
@@ -283,23 +258,6 @@ const Sidebar = ({ isOpen, onToggle }) => {
               </button>
             </div>
 
-            {/* User Info */}
-            {isAuthenticated && userEmail && (
-              <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300 truncate">
-                  {userEmail}
-                </p>
-                <div className={`text-xs ${getSyncStatusColor()} flex items-center gap-1`}>
-                  <div className={`w-2 h-2 rounded-full ${
-                    syncStatus === 'syncing' ? 'animate-pulse bg-blue-500' :
-                    syncStatus === 'success' ? 'bg-green-500' :
-                    syncStatus === 'failed' ? 'bg-red-500' :
-                    'bg-gray-400'
-                  }`} />
-                  {getSyncStatusText()}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Navigation Menu */}
@@ -349,26 +307,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
               <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
 
-            {/* Google Sync */}
-            {isAuthenticated ? (
-              <button
-                onClick={signOutFromGoogle}
-                aria-label="Sign out from Google"
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              >
-                <SignOutIcon className="w-5 h-5" aria-hidden="true" />
-                <span>Sign Out</span>
-              </button>
-            ) : (
-              <button
-                onClick={signInToGoogle}
-                aria-label="Connect Google Sheets for sync"
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-              >
-                <GoogleIcon className="w-5 h-5" aria-hidden="true" />
-                <span>Connect Google</span>
-              </button>
-            )}
+            {/* Cloud Sync Status */}
+            <SyncStatus />
           </div>
         </div>
       </motion.aside>

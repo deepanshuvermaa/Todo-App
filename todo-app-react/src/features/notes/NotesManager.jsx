@@ -149,11 +149,17 @@ const NotesManager = () => {
       )}
 
       {/* Sidebar */}
-      <div className={`${
-        showSidebar
-          ? 'fixed left-0 top-0 h-full w-80 z-50 transform translate-x-0'
-          : 'fixed left-0 top-0 h-full w-80 z-50 transform -translate-x-full'
-        } md:relative md:transform-none md:translate-x-0 md:w-80 transition-transform duration-300 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700`}>
+      <div className={`
+        fixed md:relative
+        left-0 md:left-auto
+        top-0 md:top-auto
+        h-full
+        w-80
+        z-50 md:z-auto
+        transform transition-transform duration-300
+        ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+      `}>
         {/* Mobile Close Button */}
         <button
           onClick={() => setShowSidebar(false)}

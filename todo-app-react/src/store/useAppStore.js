@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import StorageAdapter from '@/core/storage/StorageAdapter';
-import googleSheetsService from '@/services/GoogleSheetsService';
+import { supabaseService } from '@/services/SupabaseService';
 
 const storage = new StorageAdapter();
 
@@ -14,7 +14,32 @@ const useAppStore = create(
   devtools(
     subscribeWithSelector(
       persist(
-        (set, get) => ({
+        (set, get) => {
+          // Helper: merge two arrays by 'id', keeping items from both sides
+          // For items with the same id, prefer the one with the newer timestamp
+          const mergeById = (localArr, cloudArr) => {
+            if (!cloudArr || cloudArr.length === 0) return localArr || [];
+            if (!localArr || localArr.length === 0) return cloudArr;
+            const map = new Map();
+            localArr.forEach(item => { if (item && item.id) map.set(item.id, item); });
+            cloudArr.forEach(item => {
+              if (!item || !item.id) return;
+              const existing = map.get(item.id);
+              if (!existing) {
+                map.set(item.id, item);
+              } else {
+                // Prefer newer timestamp
+                const cloudTime = item.updatedAt || item.createdAt || '';
+                const localTime = existing.updatedAt || existing.createdAt || '';
+                if (cloudTime >= localTime) {
+                  map.set(item.id, item);
+                }
+              }
+            });
+            return Array.from(map.values());
+          };
+
+          return ({
           // Core State
           tasks: [],
           expenses: [],
@@ -31,12 +56,21 @@ const useAppStore = create(
           streakData: {},
           alarms: [],
           movies: [],
+          links: [],
           // Trash bin — soft deleted items
           trash: [],
 
           // Budget (needs explicit load in initialize)
           budget: null,
           budgetAlerts: [],
+
+          // Engagement and Location
+          engagementStats: {},
+          locationReminders: [],
+
+          // Onboarding and Rollover
+          onboardingCompleted: false,
+          lastRolloverDate: null,
 
           // UI State
           currentDate: new Date().toISOString(), // stored as ISO string to survive Zustand persist serialization
@@ -48,13 +82,13 @@ const useAppStore = create(
           // Auth & Sync State
           isAuthenticated: false,
           userEmail: null,
-          sheetId: null,
-          sheetUrl: null,
+          userId: null,
+          syncStatus: 'idle', // idle, syncing, success, failed, offline
           lastSyncTime: null,
-          lastSyncError: null,
-          pendingChanges: [],
-          // Race guard: prevents concurrent processPendingChanges calls
+          // Race guard: prevents concurrent syncs
           _syncInProgress: false,
+          _realtimeSubscribed: false,
+          _syncDebounce: null,
 
           // Actions - Core Functions
           initialize: async () => {
@@ -67,8 +101,9 @@ const useAppStore = create(
               const [
                 tasks, expenses, notes, habits, habitHistory, meals,
                 callReminders, completedCallReminders, bucketList, visionBoard,
-                journalEntries, quotes, streakData, alarms, movies,
-                darkMode, userEmail, sheetId, sheetUrl, budget, trash
+                journalEntries, quotes, streakData, alarms, movies, links,
+                darkMode, userEmail, sheetId, sheetUrl, budget, trash,
+                engagementStats, locationReminders, onboardingCompleted, lastRolloverDate
               ] = await Promise.all([
                 storage.get('tasks'),
                 storage.get('expenses'),
@@ -85,12 +120,17 @@ const useAppStore = create(
                 storage.get('streakData'),
                 storage.get('alarms'),
                 storage.get('movies'),
+                storage.get('links'),
                 storage.get('darkMode'),
                 storage.get('userEmail'),
                 storage.get('userSheetId'),
                 storage.get('userSheetUrl'),
                 storage.get('expenseBudget'),   // H6: budget must be loaded here
                 storage.get('trash'),
+                storage.get('engagementStats'),
+                storage.get('locationReminders'),
+                storage.get('onboardingCompleted'),
+                storage.get('lastRolloverDate'),
               ]);
 
               // H1: dark mode — unify: stored as boolean in storage, toggle also stores boolean
@@ -115,13 +155,17 @@ const useAppStore = create(
                 streakData: streakData || {},
                 alarms: alarms || [],
                 movies: movies || [],
+                links: links || [],
                 trash: trash || [],
-                budget: budget || null,           // H6: persisted budget restored
+                budget: budget || null,
+                budgetAlerts: [],
+                engagementStats: engagementStats || {},
+                locationReminders: locationReminders || [],
+                onboardingCompleted: onboardingCompleted || false,
+                lastRolloverDate: lastRolloverDate || null,
                 darkMode: darkModeValue,
-                currentDate: new Date().toISOString(), // H9: always fresh ISO string, never stale Date object
+                currentDate: new Date().toISOString(),
                 userEmail: userEmail && userEmail !== 'undefined' ? userEmail : null,
-                sheetId: sheetId && sheetId !== 'undefined' ? sheetId : null,
-                sheetUrl: sheetUrl && sheetUrl !== 'undefined' ? sheetUrl : null,
                 isLoading: false
               });
 
@@ -132,16 +176,44 @@ const useAppStore = create(
                 document.documentElement.classList.remove('dark');
               }
 
-              // Check for migration needs (guard prevents recursive loop — see migrateFromLegacy)
-              if (await storage.needsMigration()) {
-                await get().migrateFromLegacy();
+              // Restore Supabase session
+              const { user, error: sessionError } = await supabaseService.restoreSession();
+              if (user && !sessionError) {
+                set({
+                  isAuthenticated: true,
+                  userEmail: user.email,
+                  userId: user.id
+                });
+
+                // Pull data from cloud
+                await get().pullFromCloud();
+
+                // Setup realtime subscriptions
+                get().setupRealtimeSync();
               }
 
-              // Initialize Google Sheets if credentials are configured
-              get().initializeGoogleSheets();
-
-              // Setup network handlers (with cleanup tracking)
+              // Setup network handlers (online/offline detection)
               get().setupNetworkHandlers();
+
+              // Flush pending sync when user leaves/hides the page
+              const flushPendingSync = () => {
+                const currentState = get();
+                if (currentState._syncDebounce) {
+                  clearTimeout(currentState._syncDebounce);
+                  set({ _syncDebounce: null });
+                  if (navigator.onLine && currentState.isAuthenticated) {
+                    currentState.syncToCloud();
+                  }
+                }
+              };
+
+              document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                  flushPendingSync();
+                }
+              });
+
+              window.addEventListener('beforeunload', flushPendingSync);
 
               // Check and perform daily rollover
               get().checkAndPerformRollover();
@@ -151,18 +223,6 @@ const useAppStore = create(
 
               // F4: Refresh overdue flags on all tasks
               get().refreshOverdueStatus();
-
-              // Restore auth state if we have saved credentials
-              const resolvedEmail = userEmail && userEmail !== 'undefined' ? userEmail : null;
-              const resolvedSheetId = sheetId && sheetId !== 'undefined' ? sheetId : null;
-              if (resolvedEmail && resolvedSheetId) {
-                set({
-                  isAuthenticated: true,
-                  userEmail: resolvedEmail,
-                  sheetId: resolvedSheetId,
-                  sheetUrl: sheetUrl && sheetUrl !== 'undefined' ? sheetUrl : null
-                });
-              }
 
             } catch (error) {
               console.error('Failed to initialize app:', error);
@@ -437,7 +497,8 @@ const useAppStore = create(
               id: Date.now().toString(),
               ...expense,
               date: expense.date || new Date().toISOString().split('T')[0],
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
             };
 
             const expenses = [...get().expenses, newExpense];
@@ -450,7 +511,7 @@ const useAppStore = create(
 
           updateExpense: async (id, updates) => {
             const expenses = get().expenses.map(expense =>
-              expense.id === id ? { ...expense, ...updates } : expense
+              expense.id === id ? { ...expense, ...updates, updatedAt: new Date().toISOString() } : expense
             );
             set({ expenses });
             await storage.set('expenses', expenses);
@@ -830,39 +891,22 @@ const useAppStore = create(
             }
           },
 
-          queuePendingChange: (type, data) => {
-            const pendingChanges = [...get().pendingChanges, {
-              type,
-              data,
-              timestamp: new Date().toISOString()
-            }];
-
-            set({ pendingChanges });
-            storage.set('pendingChanges', pendingChanges);
-
-            // Try to sync immediately if online
-            if (navigator.onLine && get().isAuthenticated) {
-              get().processPendingChanges();
+          queuePendingChange: () => {
+            // Debounced sync to cloud (replaces old Google Sheets queueing)
+            // Clear existing timeout if any
+            if (get()._syncDebounce) {
+              clearTimeout(get()._syncDebounce);
             }
-          },
 
-          processPendingChanges: async () => {
-            // H8: race guard — only one sync can run at a time
-            if (get()._syncInProgress) return;
-            if (get().pendingChanges.length === 0) return;
-            if (!navigator.onLine || !get().isAuthenticated) return;
+            // Set new 2-second debounce timeout
+            const timeout = setTimeout(() => {
+              if (navigator.onLine && get().isAuthenticated) {
+                get().syncToCloud();
+              }
+              set({ _syncDebounce: null });
+            }, 2000);
 
-            set({ _syncInProgress: true, syncStatus: 'syncing' });
-
-            try {
-              await get().syncToSheets();
-              set({ pendingChanges: [], _syncInProgress: false });
-              await storage.set('pendingChanges', []);
-              set({ syncStatus: 'success', lastSyncTime: new Date().toISOString() });
-            } catch (error) {
-              console.error('Failed to process pending changes:', error);
-              set({ syncStatus: 'failed', _syncInProgress: false });
-            }
+            set({ _syncDebounce: timeout });
           },
 
           // Google Sheets Authentication
@@ -1532,6 +1576,39 @@ const useAppStore = create(
             get().queuePendingChange('movies', { id, deleted: true });
           },
 
+          // Link Management
+          addLink: async (linkData) => {
+            const newLink = {
+              id: Date.now(),
+              ...linkData,
+              createdAt: new Date().toISOString()
+            };
+
+            const links = [...get().links, newLink];
+            set({ links });
+            await storage.set('links', links);
+            get().queuePendingChange('links', newLink);
+
+            return newLink;
+          },
+
+          updateLink: async (linkId, updates) => {
+            const links = get().links.map(link =>
+              link.id === linkId ? { ...link, ...updates } : link
+            );
+
+            set({ links });
+            await storage.set('links', links);
+            get().queuePendingChange('links', { id: linkId, ...updates });
+          },
+
+          deleteLink: async (linkId) => {
+            const links = get().links.filter(link => link.id !== linkId);
+            set({ links });
+            await storage.set('links', links);
+            get().queuePendingChange('links', { id: linkId, deleted: true });
+          },
+
           // View Management
           setCurrentView: (view) => {
             set({ currentView: view });
@@ -1551,8 +1628,271 @@ const useAppStore = create(
                 ? Math.round((todayTasks.filter(t => t.completed).length / todayTasks.length) * 100)
                 : 0
             };
+          },
+
+          // Supabase Auth Methods
+          signInWithEmail: async (email, password) => {
+            try {
+              set({ syncStatus: 'syncing' });
+              const { user, error } = await supabaseService.signInWithEmail(email, password);
+
+              if (error) {
+                set({ syncStatus: 'failed' });
+                throw new Error(error);
+              }
+
+              set({
+                isAuthenticated: true,
+                userEmail: user.email,
+                userId: user.id,
+                syncStatus: 'idle'
+              });
+
+              await storage.set('userEmail', user.email);
+              await storage.set('userId', user.id);
+
+              // Pull data from cloud on login
+              await get().pullFromCloud();
+
+              // Setup realtime sync
+              get().setupRealtimeSync();
+
+              return user;
+            } catch (error) {
+              console.error('Sign in failed:', error);
+              set({ syncStatus: 'failed', isAuthenticated: false });
+              throw error;
+            }
+          },
+
+          signInWithMagicLink: async (email) => {
+            try {
+              set({ syncStatus: 'syncing' });
+              const { success, error } = await supabaseService.signInWithMagicLink(email);
+
+              if (error) {
+                set({ syncStatus: 'failed' });
+                throw new Error(error);
+              }
+
+              set({ syncStatus: 'idle' });
+              return { success: true };
+            } catch (error) {
+              console.error('Magic link sign in failed:', error);
+              set({ syncStatus: 'failed' });
+              throw error;
+            }
+          },
+
+          signOut: async () => {
+            try {
+              supabaseService.unsubscribeFromChanges();
+              const { error } = await supabaseService.signOut();
+
+              if (error) throw error;
+
+              set({
+                isAuthenticated: false,
+                userEmail: null,
+                userId: null,
+                syncStatus: 'idle'
+              });
+
+              await storage.remove('userEmail');
+              await storage.remove('userId');
+            } catch (error) {
+              console.error('Sign out failed:', error);
+            }
+          },
+
+          // Cloud Sync Methods
+          syncToCloud: async () => {
+            const state = get();
+            if (!state.isAuthenticated || !state.userId) return;
+            if (state._syncInProgress) return;
+
+            set({ _syncInProgress: true, syncStatus: 'syncing' });
+
+            try {
+              const dataToSync = {
+                tasks: state.tasks,
+                expenses: state.expenses,
+                notes: state.notes,
+                habits: state.habits,
+                habitHistory: state.habitHistory,
+                meals: state.meals,
+                callReminders: state.callReminders,
+                completedCallReminders: state.completedCallReminders,
+                bucketList: state.bucketList,
+                visionBoard: state.visionBoard,
+                journalEntries: state.journalEntries,
+                quotes: state.quotes,
+                streakData: state.streakData,
+                alarms: state.alarms,
+                movies: state.movies,
+                trash: state.trash,
+                budget: state.budget,
+                budgetAlerts: state.budgetAlerts,
+                darkMode: state.darkMode,
+                links: state.links || [],
+                engagementStats: state.engagementStats || {},
+                locationReminders: state.locationReminders || [],
+                lastRolloverDate: state.lastRolloverDate || null,
+                onboardingCompleted: state.onboardingCompleted || false
+              };
+
+              const { success, error } = await supabaseService.pushDataToCloud(dataToSync, state.userId);
+
+              if (error) throw error;
+
+              set({
+                _syncInProgress: false,
+                syncStatus: 'success',
+                lastSyncTime: new Date().toISOString()
+              });
+
+              return true;
+            } catch (error) {
+              console.error('Sync to cloud failed:', error);
+              set({ _syncInProgress: false, syncStatus: 'failed' });
+              return false;
+            }
+          },
+
+          pullFromCloud: async () => {
+            const state = get();
+            if (!state.isAuthenticated || !state.userId) return;
+
+            try {
+              set({ syncStatus: 'syncing' });
+              const { data, error } = await supabaseService.pullDataFromCloud(state.userId);
+
+              if (error) throw error;
+
+              if (data) {
+                // Merge arrays by id to prevent local-only items from being lost
+                const mergedTasks = mergeById(state.tasks, data.tasks);
+                const mergedExpenses = mergeById(state.expenses, data.expenses);
+                const mergedNotes = mergeById(state.notes, data.notes);
+                const mergedHabits = mergeById(state.habits, data.habits);
+                const mergedMeals = mergeById(state.meals, data.meals);
+                const mergedCallReminders = mergeById(state.callReminders, data.callReminders);
+                const mergedCompletedCallReminders = mergeById(state.completedCallReminders, data.completedCallReminders);
+                const mergedBucketList = mergeById(state.bucketList, data.bucketList);
+                const mergedVisionBoard = mergeById(state.visionBoard, data.visionBoard);
+                const mergedJournalEntries = mergeById(state.journalEntries, data.journalEntries);
+                const mergedQuotes = mergeById(state.quotes, data.quotes);
+                const mergedAlarms = mergeById(state.alarms, data.alarms);
+                const mergedMovies = mergeById(state.movies, data.movies);
+                const mergedTrash = mergeById(state.trash, data.trash);
+                const mergedBudgetAlerts = mergeById(state.budgetAlerts, data.budgetAlerts);
+                const mergedLinks = mergeById(state.links, data.links);
+                const mergedLocationReminders = mergeById(state.locationReminders, data.locationReminders);
+                const mergedHabitHistory = { ...(state.habitHistory || {}), ...(data.habitHistory || {}) };
+                const mergedStreakData = { ...(state.streakData || {}), ...(data.streakData || {}) };
+                const mergedEngagementStats = { ...(state.engagementStats || {}), ...(data.engagementStats || {}) };
+
+                set({
+                  tasks: mergedTasks,
+                  expenses: mergedExpenses,
+                  notes: mergedNotes,
+                  habits: mergedHabits,
+                  habitHistory: mergedHabitHistory,
+                  meals: mergedMeals,
+                  callReminders: mergedCallReminders,
+                  completedCallReminders: mergedCompletedCallReminders,
+                  bucketList: mergedBucketList,
+                  visionBoard: mergedVisionBoard,
+                  journalEntries: mergedJournalEntries,
+                  quotes: mergedQuotes,
+                  streakData: mergedStreakData,
+                  alarms: mergedAlarms,
+                  movies: mergedMovies,
+                  trash: mergedTrash,
+                  budget: data.budget !== undefined ? data.budget : state.budget,
+                  budgetAlerts: mergedBudgetAlerts,
+                  darkMode: data.darkMode !== undefined ? data.darkMode : state.darkMode,
+                  links: mergedLinks,
+                  engagementStats: mergedEngagementStats,
+                  locationReminders: mergedLocationReminders,
+                  lastRolloverDate: data.lastRolloverDate || state.lastRolloverDate,
+                  onboardingCompleted: data.onboardingCompleted || state.onboardingCompleted,
+                  syncStatus: 'success',
+                  lastSyncTime: new Date().toISOString()
+                });
+
+                // Persist merged data to local storage
+                await storage.setBatch({
+                  tasks: mergedTasks,
+                  expenses: mergedExpenses,
+                  notes: mergedNotes,
+                  habits: mergedHabits,
+                  habitHistory: mergedHabitHistory,
+                  meals: mergedMeals,
+                  callReminders: mergedCallReminders,
+                  completedCallReminders: mergedCompletedCallReminders,
+                  bucketList: mergedBucketList,
+                  visionBoard: mergedVisionBoard,
+                  journalEntries: mergedJournalEntries,
+                  quotes: mergedQuotes,
+                  streakData: mergedStreakData,
+                  alarms: mergedAlarms,
+                  movies: mergedMovies,
+                  trash: mergedTrash,
+                  budget: data.budget !== undefined ? data.budget : state.budget,
+                  budgetAlerts: mergedBudgetAlerts,
+                  darkMode: data.darkMode !== undefined ? data.darkMode : state.darkMode,
+                  links: mergedLinks,
+                  engagementStats: mergedEngagementStats,
+                  locationReminders: mergedLocationReminders
+                });
+              }
+            } catch (error) {
+              console.error('Pull from cloud failed:', error);
+              set({ syncStatus: 'failed' });
+            }
+          },
+
+          setupRealtimeSync: () => {
+            const state = get();
+            if (!state.isAuthenticated || !state.userId || state._realtimeSubscribed) return;
+
+            try {
+              supabaseService.subscribeToChanges(state.userId, (data) => {
+                // Merge cloud changes with local state using id-based merge
+                const currentState = get();
+                set({
+                  tasks: mergeById(currentState.tasks, data.tasks),
+                  expenses: mergeById(currentState.expenses, data.expenses),
+                  notes: mergeById(currentState.notes, data.notes),
+                  habits: mergeById(currentState.habits, data.habits),
+                  habitHistory: { ...(currentState.habitHistory || {}), ...(data.habitHistory || {}) },
+                  meals: mergeById(currentState.meals, data.meals),
+                  callReminders: mergeById(currentState.callReminders, data.callReminders),
+                  completedCallReminders: mergeById(currentState.completedCallReminders, data.completedCallReminders),
+                  bucketList: mergeById(currentState.bucketList, data.bucketList),
+                  visionBoard: mergeById(currentState.visionBoard, data.visionBoard),
+                  journalEntries: mergeById(currentState.journalEntries, data.journalEntries),
+                  quotes: mergeById(currentState.quotes, data.quotes),
+                  streakData: { ...(currentState.streakData || {}), ...(data.streakData || {}) },
+                  alarms: mergeById(currentState.alarms, data.alarms),
+                  movies: mergeById(currentState.movies, data.movies),
+                  trash: mergeById(currentState.trash, data.trash),
+                  budget: data.budget !== undefined ? data.budget : currentState.budget,
+                  budgetAlerts: mergeById(currentState.budgetAlerts, data.budgetAlerts),
+                  darkMode: data.darkMode !== undefined ? data.darkMode : currentState.darkMode,
+                  links: mergeById(currentState.links, data.links),
+                  engagementStats: { ...(currentState.engagementStats || {}), ...(data.engagementStats || {}) },
+                  locationReminders: mergeById(currentState.locationReminders, data.locationReminders)
+                });
+              });
+
+              set({ _realtimeSubscribed: true });
+            } catch (error) {
+              console.error('Setup realtime sync failed:', error);
+            }
           }
-        }),
+        })},
         {
           name: 'todo-app-storage',
           storage: {
@@ -1573,6 +1913,50 @@ const useAppStore = create(
               await storage.remove(name);
             }
           },
+          // Validate and fix corrupted data on deserialize
+          deserialize: (str) => {
+            try {
+              if (!str) return {};
+
+              const data = JSON.parse(str);
+              if (!data || typeof data !== 'object') return {};
+
+              // Fix array fields that might be corrupted
+              const arrayFields = [
+                'tasks', 'expenses', 'notes', 'habits', 'meals', 'callReminders',
+                'completedCallReminders', 'bucketList', 'visionBoard', 'journalEntries',
+                'quotes', 'alarms', 'movies', 'links', 'budgetAlerts', 'locationReminders',
+                'trash'
+              ];
+
+              for (const field of arrayFields) {
+                if (data[field] !== undefined) {
+                  if (!Array.isArray(data[field])) {
+                    console.warn(`Fixing corrupted field "${field}": expected array, got ${typeof data[field]}`);
+                    delete data[field]; // Remove bad field, let initializer set default
+                  }
+                }
+              }
+
+              // Fix object fields
+              const objectFields = ['habitHistory', 'streakData', 'engagementStats'];
+              for (const field of objectFields) {
+                if (data[field] !== undefined) {
+                  if (typeof data[field] !== 'object' || Array.isArray(data[field])) {
+                    console.warn(`Fixing corrupted field "${field}": expected object, got ${typeof data[field]}`);
+                    delete data[field]; // Remove bad field, let initializer set default
+                  }
+                }
+              }
+
+              return data;
+            } catch (error) {
+              console.error('Deserialize error, clearing corrupted data:', error);
+              // Clear the corrupted storage
+              storage.clear().catch(console.error);
+              return {}; // Return empty object on parse error - fresh start
+            }
+          },
           partialize: (state) => ({
             // Only persist data, not UI state
             tasks: state.tasks,
@@ -1590,10 +1974,15 @@ const useAppStore = create(
             streakData: state.streakData,
             alarms: state.alarms,
             movies: state.movies,
+            links: state.links,
+            budgetAlerts: state.budgetAlerts,
+            engagementStats: state.engagementStats,
+            locationReminders: state.locationReminders,
+            onboardingCompleted: state.onboardingCompleted,
+            lastRolloverDate: state.lastRolloverDate,
             darkMode: state.darkMode,
             userEmail: state.userEmail,
-            sheetId: state.sheetId,
-            sheetUrl: state.sheetUrl,
+            userId: state.userId,
             lastSyncTime: state.lastSyncTime,
             // F6: Persist trash so deleted items survive reloads
             trash: state.trash,
