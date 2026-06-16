@@ -59,6 +59,9 @@ const useAppStore = create(
           // Trash bin — soft deleted items
           trash: [],
 
+          // Sunday Ritual sessions keyed by Sunday date "YYYY-MM-DD"
+          sundayRituals: {},
+
           // Budget (needs explicit load in initialize)
           budget: null,
           budgetAlerts: [],
@@ -102,7 +105,8 @@ const useAppStore = create(
                 callReminders, completedCallReminders, bucketList, visionBoard,
                 journalEntries, quotes, streakData, alarms, movies, links,
                 darkMode, userEmail, sheetId, sheetUrl, budget, trash,
-                engagementStats, locationReminders, onboardingCompleted, lastRolloverDate
+                engagementStats, locationReminders, onboardingCompleted, lastRolloverDate,
+                sundayRituals
               ] = await Promise.all([
                 storage.get('tasks'),
                 storage.get('expenses'),
@@ -130,6 +134,7 @@ const useAppStore = create(
                 storage.get('locationReminders'),
                 storage.get('onboardingCompleted'),
                 storage.get('lastRolloverDate'),
+                storage.get('sundayRituals'),
               ]);
 
               // H1: dark mode — unify: stored as boolean in storage, toggle also stores boolean
@@ -162,6 +167,7 @@ const useAppStore = create(
                 locationReminders: locationReminders || [],
                 onboardingCompleted: onboardingCompleted || false,
                 lastRolloverDate: lastRolloverDate || null,
+                sundayRituals: sundayRituals || {},
                 darkMode: darkModeValue,
                 currentDate: new Date().toISOString(),
                 userEmail: userEmail && userEmail !== 'undefined' ? userEmail : null,
@@ -888,6 +894,17 @@ const useAppStore = create(
             if (!navigator.onLine) {
               set({ syncStatus: 'offline' });
             }
+          },
+
+          // Sunday Ritual Management
+          saveSundayRitual: async (sundayDate, sessionData) => {
+            const sundayRituals = {
+              ...get().sundayRituals,
+              [sundayDate]: { ...sessionData, updatedAt: new Date().toISOString() }
+            };
+            set({ sundayRituals });
+            await storage.set('sundayRituals', sundayRituals);
+            get().queuePendingChange('sundayRituals', { id: sundayDate, ...sessionData });
           },
 
           queuePendingChange: () => {
@@ -1737,7 +1754,8 @@ const useAppStore = create(
                 engagementStats: state.engagementStats || {},
                 locationReminders: state.locationReminders || [],
                 lastRolloverDate: state.lastRolloverDate || null,
-                onboardingCompleted: state.onboardingCompleted || false
+                onboardingCompleted: state.onboardingCompleted || false,
+                sundayRituals: state.sundayRituals || {}
               };
 
               const { success, error } = await supabaseService.pushDataToCloud(dataToSync, state.userId);
@@ -1790,6 +1808,7 @@ const useAppStore = create(
                 const mergedHabitHistory = { ...(state.habitHistory || {}), ...(data.habitHistory || {}) };
                 const mergedStreakData = { ...(state.streakData || {}), ...(data.streakData || {}) };
                 const mergedEngagementStats = { ...(state.engagementStats || {}), ...(data.engagementStats || {}) };
+                const mergedSundayRituals = { ...(state.sundayRituals || {}), ...(data.sundayRituals || {}) };
 
                 set({
                   tasks: mergedTasks,
@@ -1816,6 +1835,7 @@ const useAppStore = create(
                   locationReminders: mergedLocationReminders,
                   lastRolloverDate: data.lastRolloverDate || state.lastRolloverDate,
                   onboardingCompleted: data.onboardingCompleted || state.onboardingCompleted,
+                  sundayRituals: mergedSundayRituals,
                   syncStatus: 'success',
                   lastSyncTime: new Date().toISOString()
                 });
@@ -1843,7 +1863,8 @@ const useAppStore = create(
                   darkMode: data.darkMode !== undefined ? data.darkMode : state.darkMode,
                   links: mergedLinks,
                   engagementStats: mergedEngagementStats,
-                  locationReminders: mergedLocationReminders
+                  locationReminders: mergedLocationReminders,
+                  sundayRituals: mergedSundayRituals
                 });
               }
             } catch (error) {
@@ -1882,7 +1903,8 @@ const useAppStore = create(
                   darkMode: data.darkMode !== undefined ? data.darkMode : currentState.darkMode,
                   links: mergeById(currentState.links, data.links),
                   engagementStats: { ...(currentState.engagementStats || {}), ...(data.engagementStats || {}) },
-                  locationReminders: mergeById(currentState.locationReminders, data.locationReminders)
+                  locationReminders: mergeById(currentState.locationReminders, data.locationReminders),
+                  sundayRituals: { ...(currentState.sundayRituals || {}), ...(data.sundayRituals || {}) }
                 });
               });
 

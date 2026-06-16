@@ -24,6 +24,7 @@ import About from '@/features/about/About';
 import GlobalVoiceButton from './components/GlobalVoiceButton';
 import LoadingScreen from './components/LoadingScreen';
 import AuthModal from '@/features/auth/AuthModal';
+import SundayRitual from '@/features/sundayRitual/SundayRitual';
 import LandingPage from '@/pages/LandingPage';
 import useKeyboardShortcuts from '@/hooks/useKeyboardShortcuts';
 import './index.css';
@@ -244,6 +245,7 @@ function AppContent() {
                 <Route path="/ocr" element={<TextExtraction />} />
                 <Route path="/links" element={<LinkManager />} />
                 <Route path="/history" element={<History />} />
+                <Route path="/sunday-ritual" element={<SundayRitual />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/settings" element={<Settings />} />
               </Routes>

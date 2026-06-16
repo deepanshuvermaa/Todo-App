@@ -42,6 +42,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
       'meals': <MealIcon className="w-5 h-5" />,
       'alarms': <span className="text-lg">⏰</span>,
       'movies': <span className="text-lg">🎬</span>,
+      'sunday-ritual': <span className="text-lg">☀️</span>,
       'journal': <JournalIcon className="w-5 h-5" />,
       'reminders': <ReminderIcon className="w-5 h-5" />,
       'bucket': <DreamIcon className="w-5 h-5" />,
@@ -147,6 +148,13 @@ const Sidebar = ({ isOpen, onToggle }) => {
       icon: 'bucket',
       path: '/bucket',
       count: bucketList.filter(b => b.status !== 'completed').length
+    },
+    {
+      id: 'sunday-ritual',
+      label: 'Sunday Ritual',
+      icon: 'sunday-ritual',
+      path: '/sunday-ritual',
+      count: null
     },
     {
       id: 'voice',
